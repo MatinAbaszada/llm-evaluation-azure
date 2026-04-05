@@ -14,6 +14,13 @@ BOLD  = "\033[1m"
 RESET = "\033[0m"
 
 
+# ---------------------------------------------------------------------------
+# Economic reward parameters
+# ---------------------------------------------------------------------------
+LAMBDA_LATENCY = 0.01   # penalty weight per second of latency
+LAMBDA_ERROR   = 1.0    # penalty weight per wrong answer
+
+
 def sep(char="=", width=80):
     print(f"{WHITE}{char * width}{RESET}")
 
@@ -69,7 +76,10 @@ def _load_all(folder: Path, stem: str) -> list:
         for line in f:
             line = line.strip()
             if line:
-                records.append(json.loads(line))
+                rec = json.loads(line)
+                if rec.get("type") == "dataset_summary":
+                    continue
+                records.append(rec)
     return records
 
 
@@ -188,22 +198,17 @@ EVALUATORS = [
 
 
 # ---------------------------------------------------------------------------
-# Main runner
+# Economic reward
 # ---------------------------------------------------------------------------
 
-class _Tee:
-    """Write to both stdout and a plain-text file (no ANSI codes in file)."""
-    _ANSI = re.compile(r"\033\[[0-9;]*m")
+def compute_economic_reward(cost_usd: float, elapsed_s: float, is_correct: int) -> float:
+    """economic_reward = -(cost_usd + λ_latency·elapsed_s + λ_error·(1−is_correct))"""
+    return -(cost_usd + LAMBDA_LATENCY * elapsed_s + LAMBDA_ERROR * (1 - is_correct))
 
-    def __init__(self, filepath: Path):
-        self._f = open(filepath, "w", encoding="utf-8")
 
-    def write(self, line: str):
-        print(line)
-        self._f.write(self._ANSI.sub("", line) + "\n")
-
-    def close(self):
-        self._f.close()
+# ---------------------------------------------------------------------------
+# Main runner
+# ---------------------------------------------------------------------------
 
 
 def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> None:
@@ -214,14 +219,11 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
     name_parts = folder.name.split("_", 2)
     model_name = name_parts[2] if len(name_parts) == 3 else folder.name
 
-    out_path = folder / "eval_results.txt"
-    tee = _Tee(out_path)
-
     def p(line: str = ""):
-        tee.write(line)
+        print(line)
 
     def psep(char="=", width=80):
-        p(f"{WHITE}{char * width}{RESET}")
+        print(f"{WHITE}{char * width}{RESET}")
 
     p(f"\n{BOLD}{WHITE}Model: {model_name}  |  Results from: {folder}{RESET}")
     psep()
@@ -238,16 +240,31 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
         else:
             for record in records:
                 passed, detail, ref_passed, ref_error = fn(record)
+                record["is_correct"] = 1 if passed else 0
+                _cost    = record.get("cost_usd", 0.0) or 0.0
+                _latency = record.get("elapsed_s", 0.0) or 0.0
+                record["economic_reward"] = compute_economic_reward(_cost, _latency, record["is_correct"])
                 results_for_ds.append(("pass" if passed else "fail", detail, record, ref_passed, ref_error))
                 if record.get("cost_usd") is not None:
                     total_cost += record["cost_usd"]
                 if record.get("elapsed_s") is not None:
                     elapsed_times.append(record["elapsed_s"])
+            # Write updated records (with is_correct + economic_reward) back to the JSONL file,
+            # then append a single summary line with the average economic reward for this dataset.
+            ds_rewards_pre = [r["economic_reward"] for r in records]
+            avg_reward = sum(ds_rewards_pre) / len(ds_rewards_pre)
+            jsonl_path = folder / f"{stem}.jsonl"
+            with open(jsonl_path, "w", encoding="utf-8") as _f:
+                for _rec in records:
+                    _f.write(json.dumps(_rec) + "\n")
+                _f.write(json.dumps({"type": "dataset_summary", "avg_economic_reward": avg_reward}) + "\n")
         eval_results[name] = results_for_ds
 
     total_passed  = 0
     total_run     = 0
     skipped_count = 0
+    total_reward       = 0.0
+    total_reward_count = 0
 
     for _, display_name, _ in EVALUATORS:
         entries = eval_results.get(display_name, [])
@@ -261,6 +278,11 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
         ds_total  = len(entries)
         total_passed += ds_passed
         total_run    += ds_total
+
+        ds_rewards = [r.get("economic_reward") for _, __, r, ___, ____ in entries if r and r.get("economic_reward") is not None]
+        ds_avg_reward = sum(ds_rewards) / len(ds_rewards) if ds_rewards else None
+        total_reward       += sum(ds_rewards)
+        total_reward_count += len(ds_rewards)
 
         color = GREEN if ds_passed == ds_total else RED
         p(f"  {color}{BOLD}[{model_name}] [{display_name:12}]  {ds_passed}/{ds_total} passed{RESET}")
@@ -303,12 +325,11 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
         time_str = f"{avg_s:.3f}s avg  ({len(elapsed_times)} tasks,  total {sum(elapsed_times):.1f}s)"
     else:
         time_str = "n/a"
+    overall_reward_str = f"{total_reward / total_reward_count:.6f}" if total_reward_count > 0 else "n/a"
     p(f"  {WHITE}  Cost:        {cost_str}{RESET}")
     p(f"  {WHITE}  Time:        {time_str}{RESET}")
+    p(f"  {WHITE}  Avg reward:  {overall_reward_str}  (λ_latency={LAMBDA_LATENCY}, λ_error={LAMBDA_ERROR}){RESET}")
     psep()
-
-    tee.close()
-    print(f"{WHITE}  Saved → {out_path}{RESET}")
 
 
 if __name__ == "__main__":
