@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import time
 import random
@@ -22,7 +23,7 @@ load_dotenv()  # reads HF_TOKEN from .env if present
 _MODEL_PRINT_LOCK = threading.Lock()
 
 import questionary
-from openai import AzureOpenAI
+from openai import AzureOpenAI, OpenAI
 from datasets import load_dataset
 from datasets.exceptions import DatasetNotFoundError
 
@@ -235,35 +236,120 @@ def print_gsm8k():
 # ---------------------------------------------------------------------------
 
 # Pricing in USD per 1 000 000 tokens (input / output)
-# Source: Azure OpenAI pricing page (as of March 2026)
+# Source: Azure OpenAI pricing page (April 2026)
 MODEL_PRICING: dict[str, tuple[float, float]] = {
     "gpt-4.1":      (2.00,   8.00),
     "gpt-4.1-mini": (0.40,   1.60),
-    "gpt-5":        (10.00,  40.00),
-    "gpt-5.1":      (12.00,  48.00),
-    "gpt-5.4":      (15.00,  60.00),
     "o3-mini":      (1.10,   4.40),
+    "gpt-5.4":      (1.25,  10.00),  
+    "gpt-5.4-mini": (0.25,   2.00),
+    "gpt-5.4-pro":  (15.00, 120.00),
 }
 
-def _get_azure_client():
-    endpoint   = os.environ.get("AZURE_OPENAI_ENDPOINT", "").strip()
-    key        = os.environ.get("AZURE_OPENAI_KEY", "").strip()
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview").strip()
+# Per-model routing: endpoint key + extra API parameters
+# endpoint "duerr" = aoi-duerr-chat (env: AZURE_OPENAI_*)
+# endpoint "exp2"  = ar-foundry-experiments2 (env: AZURE_FOUNDRY_EXP2_*)
+MODEL_CONFIG: dict[str, dict] = {
+    "gpt-4.1":      {"endpoint": "duerr", "api": "chat",      "extra": {}},
+    "gpt-4.1-mini": {"endpoint": "duerr", "api": "chat",      "extra": {}},
+    "o3-mini":      {"endpoint": "duerr", "api": "chat",      "extra": {"reasoning_effort": "medium"}},
+    "gpt-5.4":      {"endpoint": "duerr", "api": "chat",      "extra": {"reasoning_effort": "medium"}},
+    "gpt-5.4-mini": {"endpoint": "exp2",  "api": "responses", "extra": {}, "reasoning_effort": "none"},
+    "gpt-5.4-pro":  {"endpoint": "exp2",  "api": "responses", "extra": {}, "reasoning_effort": "medium"},
+}
 
-    if not endpoint or not key or "<" in endpoint or "<" in key:
-        sep(color=MAGENTA)
-        print(f"{BOLD}{MAGENTA}Azure OpenAI credentials are not configured.{RESET}")
-        print(f"{YELLOW}  Open the .env file and fill in:{RESET}")
-        print(f"{GREEN}    AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/{RESET}")
-        print(f"{GREEN}    AZURE_OPENAI_KEY=<your-key>{RESET}")
-        print(f"{GREEN}    AZURE_OPENAI_DEPLOYMENT=<your-deployment-name>{RESET}")
-        sep(color=MAGENTA)
-        return None
+# Pricing: (input $/1M tokens, output $/1M tokens) — Azure pricing page April 2026
+# gpt-5.4 family pricing is estimated (not listed on public page)
+AZURE_MODELS = [
+    questionary.Separator("►  Non-reasoning  ◄"),
+    {
+        "name": "gpt-4.1-mini     — GPT-4.1 Mini      (duerr-chat)   | $0.40 / $1.60 per 1M",
+        "deployment": "gpt-4.1-mini",
+    },
+    {
+        "name": "gpt-4.1          — GPT-4.1           (duerr-chat)   | $2.00 / $8.00 per 1M",
+        "deployment": "gpt-4.1",
+    },
+    {
+        "name": "gpt-5.4-mini     — GPT-5.4 Mini      (exp2, no rsn) | ~$0.25 / $2.00 per 1M",
+        "deployment": "gpt-5.4-mini",
+    },
+    questionary.Separator("►  Reasoning  ◄"),
+    {
+        "name": "o3-mini          — O3-Mini           (duerr-chat)   | $1.10 / $4.40 per 1M",
+        "deployment": "o3-mini",
+    },
+    {
+        "name": "gpt-5.4          — GPT-5.4           (duerr-chat, reasoning on) | ~$15.00 / $60.00 per 1M",
+        "deployment": "gpt-5.4",
+    },
+    {
+        "name": "gpt-5.4-pro      — GPT-5.4 Pro       (exp2)         | ~$15.00 / $120.00 per 1M",
+        "deployment": "gpt-5.4-pro",
+    },
+]
 
-    return AzureOpenAI(azure_endpoint=endpoint, api_key=key, api_version=api_version)
+DATASETS = {
+    "HumanEval  — OpenAI code generation (164 problems)": print_humaneval,
+    "MBPP       — Google basic Python programming (500 problems)": print_mbpp,
+    "MMLU-Pro   — Multi-task language understanding, pro edition": print_mmlu_pro,
+    "GPQA       — Graduate-level PhD science QA": print_gpqa,
+    "GSM8K      — Grade-school math word problems": print_gsm8k,
+}
+
+ALL_MODELS_SENTINEL = "__ALL__"
+
+# Set to True to skip gpt-5.4-pro when "All models" is selected
+# (useful during bulk runs to avoid slow/expensive reasoning calls)
+EXCLUDE_GPT54_PRO_FROM_ALL = True
+
+_MENU_STYLE = questionary.Style(
+    [
+        ("selected", "fg:cyan bold"),
+        ("pointer", "fg:cyan bold"),
+        ("highlighted", "fg:cyan"),
+        ("answer", "fg:green bold"),
+        ("separator", "fg:yellow"),
+    ]
+)
+
+_MODEL_STYLE = questionary.Style(
+    [
+        ("selected", "fg:yellow bold"),
+        ("pointer", "fg:yellow bold"),
+        ("highlighted", "fg:yellow"),
+        ("answer", "fg:green bold"),
+        ("separator", "fg:cyan"),
+    ]
+)
 
 
-def _send_and_log(client, deployment, dataset_name, question_text, correct_answer: str = "", options: list | None = None, system_prompt: str = "You are an AI assistant. Answer the following question concisely."):
+def _get_azure_client(endpoint_key: str = "duerr") -> "AzureOpenAI | OpenAI | None":
+    if endpoint_key == "exp2":
+        # AI Foundry experiments2 — uses standard OpenAI client with base_url
+        base_url = os.environ.get("AZURE_FOUNDRY_EXP2_ENDPOINT", "").strip()
+        key      = os.environ.get("AZURE_FOUNDRY_EXP2_KEY", "").strip()
+        if not base_url or not key or "<" in base_url or "<" in key:
+            sep(color=MAGENTA)
+            print(f"{BOLD}{MAGENTA}Azure OpenAI credentials for 'ar-foundry-experiments2' are not configured.{RESET}")
+            print(f"{YELLOW}  Open the .env file and fill in the required values.{RESET}")
+            sep(color=MAGENTA)
+            return None
+        return OpenAI(base_url=base_url, api_key=key)
+    else:
+        endpoint    = os.environ.get("AZURE_OPENAI_ENDPOINT", "").strip()
+        key         = os.environ.get("AZURE_OPENAI_KEY", "").strip()
+        api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2024-12-01-preview").strip()
+        if not endpoint or not key or "<" in endpoint or "<" in key:
+            sep(color=MAGENTA)
+            print(f"{BOLD}{MAGENTA}Azure OpenAI credentials for 'aoi-duerr-chat' are not configured.{RESET}")
+            print(f"{YELLOW}  Open the .env file and fill in the required values.{RESET}")
+            sep(color=MAGENTA)
+            return None
+        return AzureOpenAI(azure_endpoint=endpoint, api_key=key, api_version=api_version)
+
+
+def _send_and_log(client, deployment, dataset_name, question_text, correct_answer: str = "", options: list | None = None, system_prompt: str = "You are an AI assistant. Answer the following question concisely.", extra_params: dict | None = None, use_responses_api: bool = False, reasoning_effort: str | None = None, confidence_mode: bool = False):
     """Sends question to Azure OpenAI. Returns (formatted_output: str, cost: float, raw_answer: str, meta: dict)."""
     out  = []
     _sep = lambda char="=", w=80, c=WHITE: out.append(f"{c}{char * w}{RESET}")
@@ -281,26 +367,75 @@ def _send_and_log(client, deployment, dataset_name, question_text, correct_answe
         for i, opt in enumerate(options):
             out.append(f"{MAGENTA}  {chr(65 + i)}. {opt}{RESET}")
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user",   "content": question_text},
-    ]
+    if confidence_mode:
+        is_code_task = "Return only raw Python" in system_prompt
+        if is_code_task:
+            system_prompt = (
+                system_prompt
+                + "\n\nIMPORTANT: After your code, on the very last line add a standalone "
+                "Python comment with your confidence: # CONFIDENCE:[number] (0-100). "
+                "Example final line: # CONFIDENCE:85"
+            )
+        else:
+            system_prompt = (
+                system_prompt
+                + "\n\nIMPORTANT: On the very last line of your response write exactly: "
+                "CONFIDENCE:[number] where [number] is your confidence from 0 to 100. "
+                "Example last line: CONFIDENCE:85"
+            )
 
     t_start = time.perf_counter()
     try:
-        response = client.chat.completions.create(model=deployment, messages=messages)
+        if use_responses_api:
+            # GPT-5 series on exp2 uses the Responses API, not Chat Completions
+            # reasoning_effort is passed as reasoning={"effort": ...}, not as a flat kwarg
+            responses_kwargs = {**(extra_params or {})}
+            if reasoning_effort and reasoning_effort != "none":
+                responses_kwargs["reasoning"] = {"effort": reasoning_effort}
+            response = client.responses.create(
+                model=deployment,
+                instructions=system_prompt,
+                input=question_text,
+                **responses_kwargs
+            )
+            answer        = response.output_text
+            prompt_toks   = response.usage.input_tokens
+            compl_toks    = response.usage.output_tokens
+            total_toks    = response.usage.total_tokens
+            finish_reason = response.status
+            model_name    = response.model
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": question_text},
+            ]
+            response      = client.chat.completions.create(model=deployment, messages=messages, **(extra_params or {}))
+            answer        = response.choices[0].message.content
+            prompt_toks   = response.usage.prompt_tokens
+            compl_toks    = response.usage.completion_tokens
+            total_toks    = response.usage.total_tokens
+            finish_reason = response.choices[0].finish_reason
+            model_name    = response.model
     except Exception as exc:
         out.append(f"{MAGENTA}  Request failed: {exc}{RESET}")
-        return "\n".join(out), 0.0, "", {"elapsed_s": None, "prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "finish_reason": None}
+        return "\n".join(out), 0.0, "", {"elapsed_s": None, "prompt_tokens": None, "completion_tokens": None, "total_tokens": None, "finish_reason": None, "confidence_score": None}
     elapsed = time.perf_counter() - t_start
 
-    answer = response.choices[0].message.content
-    usage  = response.usage
+    # Extract confidence score from last line (pattern: # CONFIDENCE:N or CONFIDENCE:N)
+    confidence_score = None
+    if confidence_mode and answer:
+        lines = answer.rstrip("\n").split("\n")
+        if lines:
+            last = lines[-1].strip()
+            m = re.match(r"^#?\s*CONFIDENCE:(\d+)\s*$", last, re.IGNORECASE)
+            if m:
+                confidence_score = min(100, max(0, int(m.group(1))))
+                answer = "\n".join(lines[:-1]).rstrip()
 
     # Cost calculation
     input_m, output_m = MODEL_PRICING.get(deployment, (0.0, 0.0))
-    cost_input  = (usage.prompt_tokens     / 1_000_000) * input_m
-    cost_output = (usage.completion_tokens / 1_000_000) * output_m
+    cost_input  = (prompt_toks / 1_000_000) * input_m
+    cost_output = (compl_toks  / 1_000_000) * output_m
     cost_total  = cost_input + cost_output
     has_pricing = input_m > 0
 
@@ -313,11 +448,11 @@ def _send_and_log(client, deployment, dataset_name, question_text, correct_answe
 
     _lbl("[USAGE & TIMING]", WHITE)
     out.append(f"{WHITE}  Time elapsed    : {elapsed:.3f}s{RESET}")
-    out.append(f"{WHITE}  Prompt tokens   : {usage.prompt_tokens:,}{RESET}")
-    out.append(f"{WHITE}  Completion tok  : {usage.completion_tokens:,}{RESET}")
-    out.append(f"{WHITE}  Total tokens    : {usage.total_tokens:,}{RESET}")
-    out.append(f"{WHITE}  Model           : {response.model}{RESET}")
-    out.append(f"{WHITE}  Finish reason   : {response.choices[0].finish_reason}{RESET}")
+    out.append(f"{WHITE}  Prompt tokens   : {prompt_toks:,}{RESET}")
+    out.append(f"{WHITE}  Completion tok  : {compl_toks:,}{RESET}")
+    out.append(f"{WHITE}  Total tokens    : {total_toks:,}{RESET}")
+    out.append(f"{WHITE}  Model           : {model_name}{RESET}")
+    out.append(f"{WHITE}  Finish reason   : {finish_reason}{RESET}")
     if has_pricing:
         out.append(f"{WHITE}  Input cost      : ${cost_input:.6f}  (${input_m:.2f} / 1M tokens){RESET}")
         out.append(f"{WHITE}  Output cost     : ${cost_output:.6f}  (${output_m:.2f} / 1M tokens){RESET}")
@@ -328,16 +463,21 @@ def _send_and_log(client, deployment, dataset_name, question_text, correct_answe
 
     meta = {
         "elapsed_s":        round(elapsed, 3),
-        "prompt_tokens":     usage.prompt_tokens,
-        "completion_tokens": usage.completion_tokens,
-        "total_tokens":      usage.total_tokens,
-        "finish_reason":     response.choices[0].finish_reason,
+        "prompt_tokens":     prompt_toks,
+        "completion_tokens": compl_toks,
+        "total_tokens":      total_toks,
+        "finish_reason":     finish_reason,
+        "confidence_score":  confidence_score,
     }
     return "\n".join(out), cost_total if has_pricing else 0.0, answer, meta
 
 
-def run_azure_samples(deployment: str, count: int = 1):
-    client = _get_azure_client()
+def run_azure_samples(deployment: str, count: int = 1, confidence_mode: bool = False):
+    cfg               = MODEL_CONFIG.get(deployment, {"endpoint": "duerr", "api": "chat", "extra": {}})
+    client            = _get_azure_client(cfg["endpoint"])
+    extra_params      = cfg["extra"]
+    use_responses_api = cfg.get("api") == "responses"
+    reasoning_effort  = cfg.get("reasoning_effort")  # only used for responses API
     if client is None:
         return
 
@@ -436,6 +576,10 @@ def run_azure_samples(deployment: str, count: int = 1):
             client, deployment,
             f"{task['ds']} #{task['idx'] + 1}",
             task["question"], task["correct"], task["options"], task["system"],
+            extra_params=extra_params,
+            use_responses_api=use_responses_api,
+            reasoning_effort=reasoning_effort,
+            confidence_mode=confidence_mode,
         )
         results[key] = (out, cost, raw_answer, meta)
 
@@ -463,8 +607,9 @@ def run_azure_samples(deployment: str, count: int = 1):
     _psep()
 
     # --- Save results to timestamped + model-named folder ---
-    ts         = datetime.now().strftime("%Y%m%d_%H%M%S")
-    result_dir = os.path.join("results", f"{ts}_{deployment}")
+    ts            = datetime.now().strftime("%Y%m%d_%H%M%S")
+    folder_suffix = "_conf" if confidence_mode else ""
+    result_dir    = os.path.join("results", f"{ts}_{deployment}{folder_suffix}")
     os.makedirs(result_dir, exist_ok=True)
 
     DS_FILE_MAP = {
@@ -495,6 +640,10 @@ def run_azure_samples(deployment: str, count: int = 1):
                     "total_tokens":      meta["total_tokens"],
                     "finish_reason":     meta["finish_reason"],
                 }
+                conf_fields = (
+                    {"confidence_score": meta["confidence_score"]}
+                    if meta.get("confidence_score") is not None else {}
+                )
                 if ds_name == "HumanEval":
                     record = {
                         "task_id": t["task_id"],
@@ -504,7 +653,7 @@ def run_azure_samples(deployment: str, count: int = 1):
                         "question": t["question"],
                         "he_test": t["he_test"],
                         "model": deployment, "timestamp": ts, "cost_usd": cost,
-                        **usage_fields,
+                        **usage_fields, **conf_fields,
                     }
                 elif ds_name == "MBPP":
                     record = {
@@ -515,7 +664,7 @@ def run_azure_samples(deployment: str, count: int = 1):
                         "question": t["question"],
                         "test_list": t["test_list"],
                         "model": deployment, "timestamp": ts, "cost_usd": cost,
-                        **usage_fields,
+                        **usage_fields, **conf_fields,
                     }
                 else:
                     record = {
@@ -524,7 +673,7 @@ def run_azure_samples(deployment: str, count: int = 1):
                         "correct_answer": t["correct"],
                         "question": t["question"],
                         "model": deployment, "timestamp": ts, "cost_usd": cost,
-                        **usage_fields,
+                        **usage_fields, **conf_fields,
                     }
                 f.write(json.dumps(record) + "\n")
 
@@ -537,45 +686,6 @@ def run_azure_samples(deployment: str, count: int = 1):
 # ---------------------------------------------------------------------------
 # Interactive menu controller
 # ---------------------------------------------------------------------------
-
-# Pricing: (input $/1M tokens, output $/1M tokens) — Azure pricing page March 2026
-AZURE_MODELS = [
-    questionary.Separator("►  Non-reasoning  ◄"),
-    {"name": "gpt-4.1          — GPT-4.1          | $2.00 / $8.00 per 1M",    "deployment": "gpt-4.1"},
-    {"name": "gpt-4.1-mini     — GPT-4.1 Mini      | $0.40 / $1.60 per 1M",   "deployment": "gpt-4.1-mini"},
-    {"name": "gpt-5            — GPT-5             | $10.00 / $40.00 per 1M",  "deployment": "gpt-5"},
-    {"name": "gpt-5.1          — GPT-5.1           | $12.00 / $48.00 per 1M", "deployment": "gpt-5.1"},
-    {"name": "gpt-5.4          — GPT-5.4 (latest)  | $15.00 / $60.00 per 1M", "deployment": "gpt-5.4"},
-    questionary.Separator("►  Reasoning  ◄"),
-    {"name": "o3-mini          — O3-Mini           | $1.10 / $4.40 per 1M",   "deployment": "o3-mini"},
-]
-
-DATASETS = {
-    "HumanEval  — OpenAI code generation (164 problems)": print_humaneval,
-    "MBPP       — Google basic Python programming (500 problems)": print_mbpp,
-    "MMLU-Pro   — Multi-task language understanding, pro edition": print_mmlu_pro,
-    "GPQA       — Graduate-level PhD science QA": print_gpqa,
-    "GSM8K      — Grade-school math word problems": print_gsm8k,
-}
-
-ALL_MODELS_SENTINEL = "__ALL__"
-
-_MENU_STYLE = questionary.Style([
-    ("selected",    "fg:cyan bold"),
-    ("pointer",     "fg:cyan bold"),
-    ("highlighted", "fg:cyan"),
-    ("answer",      "fg:green bold"),
-    ("separator",   "fg:yellow"),
-])
-
-_MODEL_STYLE = questionary.Style([
-    ("selected",    "fg:yellow bold"),
-    ("pointer",     "fg:yellow bold"),
-    ("highlighted", "fg:yellow"),
-    ("answer",      "fg:green bold"),
-    ("separator",   "fg:cyan"),
-])
-
 
 def _select_model() -> str | None:
     choices = [
@@ -672,15 +782,16 @@ def run_menu():
             if count is None:
                 continue
             models = (
-                [m["deployment"] for m in AZURE_MODELS if isinstance(m, dict)]
+                [m["deployment"] for m in AZURE_MODELS if isinstance(m, dict)
+                 if not (EXCLUDE_GPT54_PRO_FROM_ALL and m["deployment"] == "gpt-5.4-pro")]
                 if deployment == ALL_MODELS_SENTINEL
                 else [deployment]
             )
             if len(models) == 1:
-                run_azure_samples(models[0], count)
+                run_azure_samples(models[0], count, confidence_mode=True)
             else:
                 with ThreadPoolExecutor(max_workers=len(models)) as pool:
-                    pool.map(lambda dep: run_azure_samples(dep, count), models)
+                    pool.map(lambda dep, _n=count: run_azure_samples(dep, _n, confidence_mode=True), models)
             input(f"\n{BOLD}{WHITE}Press Enter to return to the menu...{RESET}")
 
         elif choice == "evaluate":

@@ -42,8 +42,9 @@ RESULTS_DIR   = pathlib.Path("results")
 CHARTS_DIR    = pathlib.Path("charts")
 CHARTS_DIR.mkdir(exist_ok=True)
 
-# Reasoning vs non-reasoning classification
-REASONING_MODELS = {"o3-mini"}
+# Reasoning vs non-reasoning classification (have reasoning_effort set)
+REASONING_MODELS = {"o3-mini", "gpt-5.4", "gpt-5.4-pro"}
+REASONING_HATCH  = "////"
 
 
 # ---------------------------------------------------------------------------
@@ -172,14 +173,25 @@ def chart1_accuracy(stats: dict):
     accs   = [stats[m]["macro_accuracy"] * 100 for m in models]
     cmap   = _model_color_map(models)
 
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.bar(models, accs, color=[cmap[m] for m in models], width=0.55, zorder=3)
-    ax.bar_label(bars, fmt="%.1f%%", padding=4, fontsize=9)
-    ax.set_ylabel("Macro-Avg Accuracy (%)")
-    ax.set_title("Model Comparison — Overall Accuracy\n(macro-average across all benchmarks)")
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for i, (m, a) in enumerate(zip(models, accs)):
+        hatch = REASONING_HATCH if m in REASONING_MODELS else None
+        bar = ax.bar(m, a, color=cmap[m], hatch=hatch, width=0.55, zorder=3,
+                     edgecolor="white" if hatch is None else "#333333", linewidth=0.8)
+        ax.bar_label(bar, fmt="%.1f%%", padding=4, fontsize=9)
+    ax.set_ylabel("Avg Accuracy (%)")
     ax.set_ylim(0, 115)
     ax.yaxis.grid(True, linestyle="--", alpha=0.5, zorder=0)
     ax.set_axisbelow(True)
+    # Legend distinguishing reasoning models
+    legend_patches = [
+        mpatches.Patch(facecolor="#aaaaaa", edgecolor="#333333",
+                       hatch=REASONING_HATCH, label="Reasoning model"),
+        mpatches.Patch(facecolor="#aaaaaa", edgecolor="white", label="Standard model"),
+    ]
+    ax.legend(handles=legend_patches, fontsize=10, framealpha=0.85,
+              loc="lower center", bbox_to_anchor=(0.5, 1),
+              ncol=2, borderaxespad=0)
     fig.tight_layout()
     _save(fig, "chart1_accuracy.png")
 
@@ -196,21 +208,27 @@ def chart2_accuracy_per_dataset(stats: dict):
     width    = 0.8 / n_m
     cmap     = _model_color_map(models)
 
-    fig, ax = plt.subplots(figsize=(11, 5))
+    fig, ax = plt.subplots(figsize=(11, 6))
     for i, model in enumerate(models):
         accs = [stats[model]["ds_accuracy"].get(ds, 0) * 100 for ds in datasets]
         offset = (i - n_m / 2 + 0.5) * width
+        hatch = REASONING_HATCH if model in REASONING_MODELS else None
         ax.bar(x + offset, accs, width=width * 0.9,
-               color=cmap[model], label=model, zorder=3)
+               color=cmap[model], hatch=hatch, label=model,
+               edgecolor="white" if hatch is None else "#333333",
+               linewidth=0.6, zorder=3)
 
     ax.set_xticks(x)
     ax.set_xticklabels(datasets)
     ax.set_ylabel("Accuracy (%)")
-    ax.set_title("Per-Dataset Accuracy by Model")
     ax.set_ylim(0, 115)
     ax.yaxis.grid(True, linestyle="--", alpha=0.5, zorder=0)
     ax.set_axisbelow(True)
-    ax.legend(loc="upper right", fontsize=8, framealpha=0.8)
+    # Model colour legend
+    model_handles, model_labels = ax.get_legend_handles_labels()
+    ax.legend(handles=model_handles, labels=model_labels,
+              fontsize=10, framealpha=0.85, loc="upper left",
+              bbox_to_anchor=(1.01, 1), borderaxespad=0)
     fig.tight_layout()
     _save(fig, "chart2_accuracy_per_dataset.png")
 
@@ -246,8 +264,7 @@ def chart3_cost_vs_accuracy(stats: dict):
                     xytext=(6, 4), fontsize=8)
 
     ax.set_xlabel("Avg Cost per Query (m$)")
-    ax.set_ylabel("Macro-Avg Accuracy (%)")
-    ax.set_title("Cost vs Accuracy — Pareto Frontier")
+    ax.set_ylabel("Avg Accuracy (%)")
     ax.yaxis.grid(True, linestyle="--", alpha=0.5)
     ax.xaxis.grid(True, linestyle="--", alpha=0.5)
     ax.set_axisbelow(True)
@@ -260,20 +277,27 @@ def chart3_cost_vs_accuracy(stats: dict):
 # ---------------------------------------------------------------------------
 
 def chart4_reward(stats: dict):
-    models  = sorted(stats)
-    rewards = [stats[m]["macro_reward"] for m in models]
-    cmap    = _model_color_map(models)
+    models   = sorted(stats)
+    penalties = [-stats[m]["macro_reward"] for m in models]  # negate: lower penalty = better
+    cmap     = _model_color_map(models)
 
-    fig, ax = plt.subplots(figsize=(8, 4))
-    bars = ax.bar(models, rewards, color=[cmap[m] for m in models], width=0.55, zorder=3)
-    ax.bar_label(bars, fmt="%.4f", padding=4, fontsize=9)
-    ax.set_ylabel("Macro-Avg Economic Reward")
-    ax.set_title(
-        f"Model Comparison — Economic Reward\n"
-        f"(λ_error={LAMBDA_ERROR_DEFAULT}, λ_latency={LAMBDA_LATENCY_DEFAULT})"
-    )
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for m, p in zip(models, penalties):
+        hatch = REASONING_HATCH if m in REASONING_MODELS else None
+        bar = ax.bar(m, p, color=cmap[m], hatch=hatch, width=0.55, zorder=3,
+                     edgecolor="white" if hatch is None else "#333333", linewidth=0.8)
+        ax.bar_label(bar, fmt="%.4f", padding=4, fontsize=9)
+    ax.set_ylabel("Economic Penalty  (lower = better)")
     ax.yaxis.grid(True, linestyle="--", alpha=0.5, zorder=0)
     ax.set_axisbelow(True)
+    legend_patches = [
+        mpatches.Patch(facecolor="#aaaaaa", edgecolor="#333333",
+                       hatch=REASONING_HATCH, label="Reasoning model"),
+        mpatches.Patch(facecolor="#aaaaaa", edgecolor="white", label="Standard model"),
+    ]
+    ax.legend(handles=legend_patches, fontsize=10, framealpha=0.85,
+              loc="lower center", bbox_to_anchor=(0.5, 1.09),
+              ncol=2, borderaxespad=0)
     fig.tight_layout()
     _save(fig, "chart4_reward.png")
 
@@ -283,14 +307,17 @@ def chart4_reward(stats: dict):
 # ---------------------------------------------------------------------------
 
 def chart5_reward_vs_lambda_error(model_folders: dict):
-    lambda_errors = np.linspace(0.1, 5.0, 40)
+    lambda_errors = np.linspace(0.1, 10.0, 80)
     models = sorted(model_folders)
     cmap   = _model_color_map(models)
+
+    max_penalty = 8.0
 
     fig, ax = plt.subplots(figsize=(9, 5))
     for model in models:
         folder = model_folders[model]
         rewards = []
+        lam_vals_used = []
         for lam_e in lambda_errors:
             ds_avgs = []
             for stem in DATASETS:
@@ -306,14 +333,18 @@ def chart5_reward_vs_lambda_error(model_folders: dict):
                     ) for r in records
                 ]
                 ds_avgs.append(sum(rews) / len(rews))
-            rewards.append(sum(ds_avgs) / len(ds_avgs) if ds_avgs else 0.0)
-        ax.plot(lambda_errors, rewards, label=model, color=cmap[model], lw=1.8)
+            val = sum(ds_avgs) / len(ds_avgs) if ds_avgs else 0.0
+            rewards.append(val)
+            lam_vals_used.append(lam_e)
+            if -val >= max_penalty:
+                break
+        ax.plot(lam_vals_used, [-r for r in rewards], label=model, color=cmap[model], lw=2.3)
 
     ax.axvline(LAMBDA_ERROR_DEFAULT, color="gray", linestyle=":", lw=1, label=f"default λ_error={LAMBDA_ERROR_DEFAULT}")
     ax.set_xlabel("λ_error  (error penalty weight)")
-    ax.set_ylabel("Macro-Avg Economic Reward")
-    ax.set_title("Reward Sensitivity to Error Penalty (λ_error)")
-    ax.legend(fontsize=8, framealpha=0.8)
+    ax.set_ylabel("Economic Penalty  (lower = better)")
+    ax.legend(fontsize=8, framealpha=0.8, loc="upper left",
+              bbox_to_anchor=(1.01, 1), borderaxespad=0)
     ax.yaxis.grid(True, linestyle="--", alpha=0.4)
     ax.set_axisbelow(True)
     fig.tight_layout()
@@ -329,10 +360,17 @@ def chart6_reward_vs_lambda_latency(model_folders: dict):
     models = sorted(model_folders)
     cmap   = _model_color_map(models)
 
+    # Custom y-axis: equally spaced visually, non-uniform in value
+    ytick_vals = [0, 0.5, 1, 1.5, 2, 3, 4, 6, 8]
+    ytick_pos  = list(range(len(ytick_vals)))          # 0..8, equal spacing
+    def to_pos(v):
+        return float(np.interp(v, ytick_vals, ytick_pos))
+
     fig, ax = plt.subplots(figsize=(9, 5))
     for model in models:
         folder = model_folders[model]
         rewards = []
+        lam_vals_used = []
         for lam_l in lambda_lats:
             ds_avgs = []
             for stem in DATASETS:
@@ -348,14 +386,20 @@ def chart6_reward_vs_lambda_latency(model_folders: dict):
                     ) for r in records
                 ]
                 ds_avgs.append(sum(rews) / len(rews))
-            rewards.append(sum(ds_avgs) / len(ds_avgs) if ds_avgs else 0.0)
-        ax.plot(lambda_lats, rewards, label=model, color=cmap[model], lw=1.8)
+            val = sum(ds_avgs) / len(ds_avgs) if ds_avgs else 0.0
+            rewards.append(val)
+            lam_vals_used.append(lam_l)
+            if -val >= max(ytick_vals):
+                break
+        ax.plot(lam_vals_used, [to_pos(-r) for r in rewards], label=model, color=cmap[model], lw=2.3)
 
     ax.axvline(LAMBDA_LATENCY_DEFAULT, color="gray", linestyle=":", lw=1, label=f"default λ_latency={LAMBDA_LATENCY_DEFAULT}")
     ax.set_xlabel("λ_latency  (latency penalty weight)")
-    ax.set_ylabel("Macro-Avg Economic Reward")
-    ax.set_title("Reward Sensitivity to Latency Penalty (λ_latency)")
-    ax.legend(fontsize=8, framealpha=0.8)
+    ax.set_ylabel("Economic Penalty  (lower = better)")
+    ax.legend(fontsize=8, framealpha=0.8, loc="upper left",
+              bbox_to_anchor=(1.01, 1), borderaxespad=0)
+    ax.set_yticks(ytick_pos)
+    ax.set_yticklabels(ytick_vals)
     ax.yaxis.grid(True, linestyle="--", alpha=0.4)
     ax.set_axisbelow(True)
     fig.tight_layout()
@@ -412,7 +456,7 @@ def chart7_best_model_heatmap(model_folders: dict):
     colors  = [cmap_m[m] for m in models]
     cmap    = ListedColormap(colors)
 
-    fig, ax = plt.subplots(figsize=(10, 7))
+    fig, ax = plt.subplots(figsize=(13, 7))
     im = ax.imshow(
         grid_int,
         aspect="auto",
@@ -438,11 +482,11 @@ def chart7_best_model_heatmap(model_folders: dict):
     def_e = np.argmin(np.abs(lam_errors - LAMBDA_ERROR_DEFAULT))
     def_l = np.argmin(np.abs(lam_lats   - LAMBDA_LATENCY_DEFAULT))
     ax.plot(def_e, def_l, "w*", markersize=12, label="default (λ_e=1.0, λ_l=0.01)")
-    ax.legend(loc="upper left", fontsize=8, framealpha=0.8)
 
-    # Legend patches
+    # Legend patches (includes default marker entry)
     patches = [mpatches.Patch(color=cmap_m[m], label=m) for m in models]
-    ax.legend(handles=patches, loc="lower right", fontsize=8, framealpha=0.8, title="Best model")
+    ax.legend(handles=patches, fontsize=12, framealpha=0.8, title="Best model",
+              title_fontsize=12, loc="upper left", bbox_to_anchor=(1.01, 1), borderaxespad=0)
 
     fig.tight_layout()
     _save(fig, "chart7_best_model_heatmap.png")

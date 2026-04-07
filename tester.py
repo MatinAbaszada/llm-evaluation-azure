@@ -96,12 +96,21 @@ def evaluate_humaneval(record: dict) -> tuple[bool, str, "bool | None", str]:
     code    = record.get("solution") or record.get("model_response", "")
     he_test = record.get("he_test", "")
     if not he_test:
-        return True, "No test code available \u2014 skipped", None, ""
+        return True, "No test code available — skipped", None, ""
+
+    # Extract the entry-point function name from the code (first `def` line)
+    fn_match = re.search(r"def (\w+)\s*\(", code)
+    if not fn_match:
+        return False, "Could not find function definition in solution", None, ""
+    fn_name = fn_match.group(1)
+
     namespace: dict = {}
     ai_passed, ai_error = True, ""
     try:
         exec(code,    namespace)
         exec(he_test, namespace)
+        # he_test only *defines* check(); we must call it to run the assertions
+        namespace["check"](namespace[fn_name])
     except Exception as exc:
         ai_passed, ai_error = False, _fmt_exc(exc)
 
@@ -113,6 +122,7 @@ def evaluate_humaneval(record: dict) -> tuple[bool, str, "bool | None", str]:
         try:
             exec(he_prompt + correct, ref_ns)
             exec(he_test, ref_ns)
+            ref_ns["check"](ref_ns[fn_name])
         except Exception as exc:
             ref_passed, ref_error = False, _fmt_exc(exc)
 
@@ -174,10 +184,11 @@ def evaluate_gsm8k(record: dict) -> tuple[bool, str, None, str]:
     model_resp  = record.get("model_response", "")
     correct_raw = record.get("correct_answer", "")
 
-    m = re.search(r"####\s*([\d,]+)", correct_raw)
+    # GSM8K format: chain-of-thought ending with "#### <number>"
+    m = re.search(r"####\s*([\d,\.]+)", correct_raw)
     expected = m.group(1).replace(",", "") if m else re.sub(r"[^\d.]", "", correct_raw.strip())
 
-    nums = re.findall(r"\d[\d,.]*", model_resp.replace(",", ""))
+    nums = re.findall(r"[\d,\.]+", model_resp.replace(",", ""))
     got  = nums[-1].replace(",", "") if nums else ""
 
     passed = got == expected
