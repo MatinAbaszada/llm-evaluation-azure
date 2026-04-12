@@ -608,8 +608,7 @@ def run_azure_samples(deployment: str, count: int = 1, confidence_mode: bool = F
 
     # --- Save results to timestamped + model-named folder ---
     ts            = datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder_suffix = "_conf" if confidence_mode else ""
-    result_dir    = os.path.join("results", f"{ts}_{deployment}{folder_suffix}")
+    result_dir    = os.path.join("results", f"{ts}_{deployment}")
     os.makedirs(result_dir, exist_ok=True)
 
     DS_FILE_MAP = {
@@ -715,7 +714,16 @@ def _select_question_count() -> int | None:
         questionary.Choice(title="  5 questions per dataset", value=5),
         questionary.Choice(title=" 10 questions per dataset", value=10),
         questionary.Choice(title=" 25 questions per dataset", value=25),
-        questionary.Choice(title=" 50 questions per dataset", value=50),
+        questionary.Choice(title="  50 questions per dataset", value=50),
+        questionary.Choice(title=" 100 questions per dataset", value=100),
+        questionary.Choice(
+            title="1000 questions per dataset  (HumanEval/GPQA capped at full set  ⚠ expensive)",
+            value=1000,
+        ),
+        questionary.Choice(
+            title=" All questions  (HumanEval=164, MBPP=500, GPQA=198, GSM8K=1319, MMLU-Pro=12k+  ⚠ very expensive)",
+            value=999_999,
+        ),
         questionary.Choice(title="\u2190  Back",              value=None),
     ]
     print(f"\n{BOLD}{WHITE}Select question count:{RESET}")

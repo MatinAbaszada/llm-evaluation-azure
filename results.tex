@@ -1,0 +1,988 @@
+---
+
+## Standalone Model Results — Comprehensive Analysis
+
+### 1. Overview of the Evaluation Setup
+
+Six standalone large language models were evaluated across five benchmark datasets: **HumanEval** (code generation), **MBPP** (Python programming), **MMLU-Pro** (multidisciplinary academic reasoning), **GPQA** (graduate-level scientific questions), and **GSM8K** (grade-school math). The models span two architectural generations and three capability tiers:
+
+- **Standard models**: gpt-4.1-mini, gpt-4.1, gpt-5.4-mini, gpt-5.4
+- **Reasoning model**: o3-mini
+- **Frontier model**: gpt-5.4-pro
+
+The total number of evaluated records varies by model — gpt-4.1-mini and gpt-5.4-mini were evaluated on larger subsets (3,020 and 2,982 records respectively), while gpt-5.4, gpt-5.4-pro and the GPQA subset of o3-mini were evaluated on smaller samples (250 records each). All performance figures reported below are macro-averaged accuracy across datasets (i.e., each dataset contributes equally regardless of sample size) unless otherwise specified.
+
+---
+
+### 2. Accuracy
+
+### 2.1 Macro-Average Accuracy
+
+| Model | Macro Acc. | Reasoning? |
+| --- | --- | --- |
+| gpt-5.4-pro | **93.2%** | No (frontier) |
+| gpt-5.4 | 90.8% | No |
+| o3-mini | 83.3% | **Yes** |
+| gpt-4.1 | 68.3% | No |
+| gpt-5.4-mini | 60.6% | No |
+| gpt-4.1-mini | 57.6% | No |
+
+The results reveal a clear two-tier structure. The top tier — gpt-5.4-pro (93.2%), gpt-5.4 (90.8%), and o3-mini (83.3%) — all achieve above 80% macro-average accuracy. The second tier — gpt-4.1 (68.3%), gpt-5.4-mini (60.6%), and gpt-4.1-mini (57.6%) — clusters between 57–68%. There is a **~15 percentage point gap** between o3-mini and gpt-4.1, suggesting a meaningful capability discontinuity between these tiers rather than a smooth continuum.
+
+### 2.2 Per-Dataset Accuracy
+
+| Model | HumanEval | MBPP | MMLU-Pro | GPQA | GSM8K |
+| --- | --- | --- | --- | --- | --- |
+| gpt-5.4-pro | 94.0% | 100.0% | 92.0% | 82.0% | 98.0% |
+| gpt-5.4 | 94.0% | 94.0% | 90.0% | 84.0% | 92.0% |
+| o3-mini | 94.1% | 96.8% | 78.8% | 52.8% | 94.0% |
+| gpt-4.1 | 92.4% | 100.0% | 50.1% | 45.7% | 53.1% |
+| gpt-5.4-mini | 88.3% | 81.0% | 41.6% | 39.6% | 52.2% |
+| gpt-4.1-mini | 91.4% | 82.7% | 27.8% | 34.3% | 51.9% |
+
+Several patterns emerge from the per-dataset breakdown:
+
+**Coding tasks are easy for all models.** On HumanEval and MBPP, every model scores between 81–100%. Even gpt-4.1-mini, the weakest model overall, achieves 91.4% on HumanEval and 82.7% on MBPP. This suggests that code generation is well within the capability of even smaller modern LLMs and offers limited discriminating power between models.
+
+**GPQA is the hardest benchmark.** GPQA (Graduate-Level Google-Proof Q&A, consisting of PhD-level science questions) shows the largest spread — from 34.3% (gpt-4.1-mini) to 84.0% (gpt-5.4). Notably, o3-mini, a dedicated reasoning model, achieves only 52.8% on GPQA — lower than the non-reasoning gpt-5.4 (84.0%) and gpt-5.4-pro (82.0%). This is a striking finding: reasoning-oriented chain-of-thought inference does not universally dominate on expert-level science questions; raw model knowledge and capacity appears to matter more.
+
+**MMLU-Pro is the second most challenging.** Scores range from 27.8% (gpt-4.1-mini) to 92.0% (gpt-5.4-pro). The 4.1-generation models struggle significantly here — gpt-4.1 achieves only 50.1% and gpt-4.1-mini just 27.8%, barely above random chance for a 10-choice question format. The 5.4-generation models dominate with 90%+ scores, confirming that MMLU-Pro is highly sensitive to model generation.
+
+**GSM8K is moderately easy for strong models but hard for weak ones.** The spread is 51.9% to 98.0%. The weaker models (gpt-4.1, gpt-4.1-mini, gpt-5.4-mini) all cluster around 52%, while the top performers exceed 92%. This bimodal distribution suggests that the reasoning step required for multi-step arithmetic is either within or outside a model's capability boundary — there is little middle ground.
+
+**gpt-4.1 shows a coding-specialist pattern.** Despite a modest macro-average of 68.3%, gpt-4.1 achieves 92.4% on HumanEval and 100.0% on MBPP — matching the frontier models on code. However, it drops sharply on MMLU-Pro (50.1%), GPQA (45.7%), and GSM8K (53.1%). This suggests that the gpt-4.1 series may have been disproportionately trained on code tasks relative to scientific reasoning.
+
+---
+
+### 3. Latency
+
+| Model | Macro Avg Latency | HumanEval | MBPP | MMLU-Pro | GPQA | GSM8K |
+| --- | --- | --- | --- | --- | --- | --- |
+| gpt-4.1 | **10.1s** | 7.2s | 6.7s | 14.6s | 13.3s | 8.8s |
+| gpt-5.4 | 11.9s | 9.1s | 9.7s | 8.9s | 29.7s | 2.3s |
+| gpt-4.1-mini | 23.9s | 6.6s | 19.6s | 21.7s | 39.9s | 32.0s |
+| gpt-5.4-mini | 36.1s | 24.9s | 53.1s | 62.8s | 25.2s | 14.7s |
+| gpt-5.4-pro | 47.2s | 45.6s | 56.8s | 31.5s | 91.2s | 11.1s |
+| o3-mini | 61.6s | 42.2s | 71.2s | 104.1s | 71.6s | 18.7s |
+
+Latency results are perhaps the most counter-intuitive finding in the standalone analysis. **gpt-4.1 is the fastest model at 10.1 seconds average**, while its smaller sibling gpt-4.1-mini is 2.4× slower at 23.9 seconds. Similarly, the powerful gpt-5.4 is faster (11.9s) than gpt-5.4-mini (36.1s). This inverts the conventional assumption that smaller models should be faster.
+
+There are two plausible explanations: First, smaller models (mini variants) may generate significantly longer responses — they tend to be more verbose or produce more chain-of-thought padding per token cost. Second, inference infrastructure allocation may differ by model tier, with larger flagship models benefiting from more hardware resources. The practical implication is significant: the latency hierarchy does not mirror the cost or size hierarchy.
+
+**o3-mini is the slowest model at 61.6s average**, with extreme latency on MMLU-Pro (104.1s average per question). This is consistent with its reasoning architecture, which performs extended internal deliberation before responding. On simpler tasks like GSM8K (18.7s), o3-mini is considerably faster, suggesting that the reasoning time scales with problem difficulty.
+
+**gpt-5.4-pro has the second-highest latency at 47.2s**, with notably high GPQA latency (91.2s). Despite being the most accurate model, its throughput cost is substantial. For applications requiring real-time responses, gpt-5.4-pro would be impractical.
+
+---
+
+### 4. Cost
+
+| Model | Macro Avg Cost/query | GPQA (most expensive) |
+| --- | --- | --- |
+| gpt-5.4-mini | **0.138 m$** | 0.124 m$ |
+| gpt-4.1-mini | 0.255 m$ | 0.346 m$ |
+| gpt-4.1 | 0.687 m$ | 0.775 m$ |
+| o3-mini | 4.659 m$ | 8.805 m$ |
+| gpt-5.4 | 5.370 m$ | 14.808 m$ |
+| gpt-5.4-pro | **106.021 m$** | 295.182 m$ |
+
+*(1 m$ = $0.001)*
+
+The cost distribution spans nearly **three orders of magnitude** — from gpt-5.4-mini at 0.138 m$/query to gpt-5.4-pro at 106.021 m$/query, a ratio of 769×. This extreme spread is the defining economic characteristic of the model landscape and has profound implications for deployment decisions.
+
+**gpt-5.4-pro is prohibitively expensive for high-throughput use.** At an average of 106 m$ per query — and 295 m$ per GPQA question — using gpt-5.4-pro for a dataset of 10,000 questions would cost over $1,000. Even in research settings, this limits practical deployment.
+
+**GPQA is consistently the most expensive dataset across all models.** The questions are long, multi-part scientific problems requiring extensive reasoning, leading to longer contexts and thus higher token costs. gpt-5.4 spends 14.8 m$ on GPQA versus just 1.0 m$ on GSM8K. The dataset difficulty directly maps to API cost.
+
+**The mini models are highly cost-efficient.** gpt-5.4-mini at 0.138 m$/query is even cheaper than gpt-4.1-mini (0.255 m$/query), despite being a newer-generation model. This likely reflects architectural optimizations in the 5.4 generation for inference efficiency.
+
+**Accuracy per dollar** (macro accuracy / cost per query, in accuracy points per dollar):
+
+| Model | Accuracy/$ |
+| --- | --- |
+| gpt-5.4-mini | 4,385 acc.pts/$ |
+| gpt-4.1-mini | 2,261 acc.pts/$ |
+| gpt-4.1 | 994 acc.pts/$ |
+| o3-mini | 179 acc.pts/$ |
+| gpt-5.4 | 169 acc.pts/$ |
+| gpt-5.4-pro | 9 acc.pts/$ |
+
+**gpt-5.4-mini is the most cost-efficient model by a wide margin** — it delivers 4,385 accuracy points per dollar, more than twice gpt-4.1-mini and nearly **490× more than gpt-5.4-pro**. However, raw efficiency ignores absolute performance: if a task requires >85% accuracy, gpt-5.4-mini (60.6%) cannot satisfy it at any price.
+
+---
+
+### 5. Economic Reward
+
+The economic reward is the unified evaluation metric that jointly penalizes cost, latency, and errors:
+
+$$r = -\text{cost} + \lambda_e \cdot (\text{accuracy} - 1) + \lambda_l \cdot (-\text{latency})$$
+
+At the default weights $\lambda_e = 1.0$, $\lambda_l = 0.01$:
+
+| Model | Avg Reward | Avg Penalty |
+| --- | --- | --- |
+| gpt-5.4 | **−0.217** | **0.217** |
+| gpt-4.1 | −0.419 | 0.419 |
+| gpt-5.4-pro | −0.646 | 0.646 |
+| gpt-4.1-mini | −0.663 | 0.663 |
+| gpt-5.4-mini | −0.756 | 0.756 |
+| o3-mini | −0.787 | 0.787 |
+
+**gpt-5.4 ranks first in economic reward** despite not having the highest raw accuracy. This result is explained by its rare combination of high accuracy (90.8%), low latency (11.9s), and moderate cost (5.37 m$/query). gpt-5.4-pro is more accurate (93.2% vs 90.8%) but its vastly higher cost ($106 m$ vs $5.37 m$) and latency (47.2s vs 11.9s) penalize its reward severely.
+
+**gpt-5.4-pro drops to 3rd place** in economic reward despite being the most accurate model. The 20× higher per-query cost of gpt-5.4-pro (relative to gpt-5.4) adds 100 m$ per query to the cost penalty — and the 35-second additional latency adds a further 0.35 penalty units. The 2.4 percentage point accuracy gain does not compensate.
+
+**o3-mini ranks last** despite being the third most accurate model (83.3%). Its penalty of 0.787 is driven primarily by its extreme latency (61.6s average, adding ~0.616 to the latency penalty) and by MMLU-Pro's exceptional 104s per query. At $\lambda_l = 0.01$, this latency penalty is substantial but not catastrophic; at higher latency weights the penalty would grow sharply.
+
+**The economic reward is highly sensitive to the lambda parameters.** The heatmap analysis (chart7) shows that at low $\lambda_e$ (accuracy matters less) and low $\lambda_l$ (latency matters less), gpt-5.4-mini wins because its tiny cost dominates. At intermediate values, gpt-5.4 and gpt-4.1 compete. At high $\lambda_e$ (accuracy above all), gpt-5.4-pro wins a region. This sensitivity means the "best" model is fundamentally application-dependent.
+
+---
+
+### 6. Cross-Model Patterns and Key Takeaways
+
+**Capability generation gap.** The jump from the 4.1 to the 5.4 generation is larger than the jump within generations. gpt-5.4 (90.8%) vs gpt-4.1 (68.3%) is a 22.5 pp gap; gpt-5.4-mini (60.6%) vs gpt-4.1-mini (57.6%) is only 3 pp. The 5.4 flagship benefited more from the architectural advances than the mini variant.
+
+**The mini/flagship relationship is reversed for latency.** Mini models are consistently slower than their flagship counterparts (gpt-4.1-mini: 23.9s vs gpt-4.1: 10.1s; gpt-5.4-mini: 36.1s vs gpt-5.4: 11.9s). This strongly suggests that mini models generate more tokens per response — possibly due to more verbose reasoning traces or less efficient output control — which is an important consideration for any latency-sensitive application.
+
+**Reasoning models (o3-mini) do not universally dominate.** o3-mini occupies a peculiar position: it is strong on coding (94.1% HumanEval, 96.8% MBPP) and math (94.0% GSM8K), but surprisingly weak on GPQA (52.8%) — a domain where one might expect chain-of-thought reasoning to shine. Meanwhile, gpt-5.4 achieves 84.0% on GPQA without explicit reasoning. This suggests that extended deliberation helps with well-defined procedural tasks (code, arithmetic) but offers limited gains on knowledge-intensive questions where the bottleneck is stored knowledge rather than reasoning steps.
+
+**No single model Pareto-dominates.** Every model is dominated on at least one dimension by another model. gpt-5.4 comes closest — it is faster, cheaper, and nearly as accurate as gpt-5.4-pro, and more accurate and cheaper than o3-mini. However, gpt-5.4 cannot match gpt-5.4-mini on cost, nor can it match gpt-5.4-pro on accuracy. This multi-dimensional trade-off is precisely what motivates the exploration of optimization strategies — and explains why the economic reward framework is necessary to make principled deployment decisions.
+
+---
+
+## Cascade Optimization — Comprehensive Analysis
+
+### 1. How Cascade Works
+
+The cascade strategy applies a two-model pipeline to each query. The **small model** answers first and produces a confidence score. If that score is above the threshold $T$, its answer is accepted ("kept"). If below $T$, the question is considered too hard for the small model and is **escalated** to the large model. Four small/large pairings were evaluated at three confidence thresholds (T=60, 75, 90), yielding 12 cascade configurations in total.
+
+| Small model | Large model | Thresholds |
+| --- | --- | --- |
+| gpt-4.1-mini | gpt-4.1 | 60, 75, 90 |
+| gpt-4.1-mini | gpt-5.4 | 60, 75, 90 |
+| gpt-5.4-mini | gpt-4.1 | 60, 75, 90 |
+| gpt-5.4-mini | gpt-5.4 | 60, 75, 90 |
+
+---
+
+### 2. The Central Finding: Near-Zero Escalation
+
+The most important — and surprising — result of the cascade experiments is how rarely escalation actually triggers. Across nearly all configurations, the vast majority of questions are answered by the small model alone:
+
+| Configuration | T=60 esc. | T=75 esc. | T=90 esc. |
+| --- | --- | --- | --- |
+| gpt-4.1-mini → gpt-4.1 | **0.1%** | **0.4%** | **1.1%** |
+| gpt-4.1-mini → gpt-5.4 | **0.0%** | **0.1%** | **0.1%** |
+| gpt-5.4-mini → gpt-4.1 | **0.1%** | **1.7%** | **7.3%** |
+| gpt-5.4-mini → gpt-5.4 | **0.0%** | **0.2%** | **1.0%** |
+
+Even at the most aggressive threshold T=90 (escalate if confidence is below 90%), the highest escalation rate observed is only **7.3%** (gpt-5.4-mini → gpt-4.1). Across all other T=90 configurations, rates remain between 0.1% and 1.1%. At T=60 and T=75, escalation is essentially non-existent.
+
+**Root cause: model overconfidence.** These modern LLMs assign high self-confidence to almost every answer — even wrong ones. The confidence scores cluster above all three thresholds, so the escalation gate almost never opens. This is a well-documented phenomenon in the LLM calibration literature: large neural models are systematically overconfident, meaning confidence scores are poor proxies for actual correctness probability.
+
+The practical consequence is severe: because escalation is so rare, each cascade configuration is nearly identical to simply running the small model standalone. The large model's capability is effectively never leveraged.
+
+---
+
+### 3. Accuracy Results
+
+### 3.1 Macro-Average Accuracy by Configuration
+
+| Configuration | T=60 | T=75 | T=90 | Small standalone | Large standalone |
+| --- | --- | --- | --- | --- | --- |
+| gpt-4.1-mini → gpt-4.1 | 48.7% | 48.8% | 48.7% | **57.6%** | 68.3% |
+| gpt-4.1-mini → gpt-5.4 | 48.7% | 48.7% | 48.7% | **57.6%** | 90.8% |
+| gpt-5.4-mini → gpt-4.1 | 53.7% | 53.6% | 53.7% | **60.6%** | 68.3% |
+| gpt-5.4-mini → gpt-5.4 | 53.7% | 53.9% | **54.2%** | 60.6% | 90.8% |
+
+A striking observation: **every cascade configuration is less accurate than its small model standalone baseline**. For example, gpt-4.1-mini standalone achieves 57.6%, but gpt-4.1-mini → gpt-4.1 at T=90 achieves only 48.7%. This seems paradoxical — adding a powerful large model should help. The explanation lies in how macro-average is computed. The macro-average weights all five datasets equally, and the cascade dataset sample composition may differ slightly from the standalone evaluation (e.g., the standalone small model was evaluated on more records including easier questions). The absolute per-record accuracy is essentially the same as the small model alone, confirming the near-zero escalation finding.
+
+The accuracy gap between T values is negligible across all configurations — at most 0.5 percentage points across the whole T=60 to T=90 range — directly reflecting how rarely the threshold changes which model answers.
+
+### 3.2 Per-Dataset Accuracy
+
+For gpt-5.4-mini → gpt-5.4 (the most escalating configuration at T=90):
+
+| Dataset | Small alone | Cascade T=90 | Escalation |
+| --- | --- | --- | --- |
+| HumanEval | 88.3% | 88.3% | 0.6% |
+| MBPP | 81.0% | 81.4% | 0.8% |
+| MMLU-Pro | 41.6% | 42.5% | 1.1% |
+| GPQA | 39.6% | 40.7% | 3.0% |
+| GSM8K | 52.2% | 52.3% | 0.2% |
+
+Even at T=90 with the most escalation-prone pairing, the accuracy gains per dataset are minimal: +0.4 pp on MBPP, +0.9 pp on MMLU-Pro, +1.1 pp on GPQA. GPQA benefits the most — consistent with it being the hardest benchmark — but the improvement is still only 1.1 percentage points for a 3.0% escalation rate.
+
+The gpt-5.4-mini → gpt-4.1 pairing at T=90 actually shows **accuracy decreasing** on GPQA (39.6% → 38.9%) and GSM8K (52.2% → 52.1%) despite escalating 27.2% and 1.5% of questions respectively. This reveals a critical flaw in the cascade logic when the large model (gpt-4.1) is not substantially better than the small model (gpt-5.4-mini) on those datasets. gpt-4.1 achieves only 45.7% on GPQA standalone, while gpt-5.4-mini achieves 39.6% — the large model is barely stronger, so escalating to it may introduce noise rather than improvement.
+
+---
+
+### 4. Cost Analysis
+
+### 4.1 Cost vs. Small Model Baseline
+
+| Configuration | T=60 cost | T=90 cost | Small standalone |
+| --- | --- | --- | --- |
+| gpt-4.1-mini → gpt-4.1 | 0.250 m$ | 0.256 m$ | 0.255 m$ |
+| gpt-4.1-mini → gpt-5.4 | 0.250 m$ | 0.278 m$ | 0.255 m$ |
+| gpt-5.4-mini → gpt-4.1 | 0.110 m$ | 0.162 m$ | 0.138 m$ |
+| gpt-5.4-mini → gpt-5.4 | 0.111 m$ | 0.251 m$ | 0.138 m$ |
+
+The cascade cost is nearly identical to the small model at T=60/75, since almost nothing escalates. At T=90, the gpt-5.4-mini → gpt-5.4 pairing rises from 0.111 m$ to 0.251 m$ — a 126% increase for a mere 1% escalation rate. This is because gpt-5.4 is extremely expensive (~14.8 m$ on GPQA), and even rare escalation can significantly shift the average. This cost increase at T=90 represents the worst case: paying substantially more while gaining almost no accuracy.
+
+The **gpt-5.4-mini based cascades are cheaper** than gpt-4.1-mini cascades at T=60/75 (0.110–0.111 m$ vs 0.250 m$), consistent with gpt-5.4-mini being the cheapest standalone model.
+
+### 4.2 GPQA: The Expensive Dataset
+
+GPQA dominates cascade costs, especially at T=90 in gpt-5.4-mini → gpt-5.4:
+
+| T | GPQA escalation | GPQA cost/query |
+| --- | --- | --- |
+| T=60 | 0.0% | 0.124 m$ |
+| T=75 | 0.5% | 0.192 m$ |
+| T=90 | **3.0%** | **0.748 m$** |
+
+The GPQA cost increases **6× from T=60 to T=90** because those escalated questions hit gpt-5.4 at its most expensive settings (complex science problems with long contexts costing ~14.8 m$ each), while the escalation rate grows only modestly from 0% to 3%.
+
+---
+
+### 5. Economic Reward
+
+| Configuration | T=60 | T=75 | T=90 |
+| --- | --- | --- | --- |
+| gpt-4.1-mini → gpt-4.1 | −0.777 | −0.776 | −0.778 |
+| gpt-4.1-mini → gpt-5.4 | −0.777 | −0.776 | −0.777 |
+| gpt-5.4-mini → gpt-4.1 | −0.841 | −0.844 | −0.850 |
+| gpt-5.4-mini → gpt-5.4 | −0.840 | −0.840 | −0.838 |
+
+**All 12 cascade configurations produce worse economic reward than their small model baselines** (gpt-4.1-mini: −0.663, gpt-5.4-mini: −0.756) and dramatically worse than gpt-5.4 standalone (−0.217) or gpt-4.1 (−0.419).
+
+The reward barely changes across thresholds — the difference between T=60 and T=90 within a pairing is at most 0.01 reward units — confirming that the threshold parameter has almost no practical effect on outcomes.
+
+A notable and counter-intuitive result: **gpt-5.4-mini cascades perform worse in reward than gpt-4.1-mini cascades** (−0.84 vs −0.78), despite gpt-5.4-mini being slightly more accurate in standalone. This is because gpt-5.4-mini has much higher average latency (36.1s vs 23.9s), which accumulates into a significant latency penalty under the reward formula. The latency penalty at $\lambda_l = 0.01$ adds approximately 0.36 points of penalty per query for gpt-5.4-mini versus 0.24 for gpt-4.1-mini.
+
+---
+
+### 6. Configuration-Specific Observations
+
+**The choice of large model makes almost no difference.** Comparing gpt-4.1-mini → gpt-4.1 versus gpt-4.1-mini → gpt-5.4 at the same threshold reveals nearly identical results across all metrics — because the large model is called on fewer than 1% of questions. The entire "power" of the large model is wasted.
+
+**gpt-5.4-mini → gpt-4.1 is the worst pairing.** When escalated, gpt-4.1 (45.7% on GPQA, 50.1% on MMLU-Pro) is barely better than gpt-5.4-mini (39.6% on GPQA, 41.6% on MMLU-Pro) on the hard datasets where escalation actually occurs. This makes the pairing doubly ineffective: escalation is rare, and when it does happen, the upgrade barely helps.
+
+**gpt-5.4-mini → gpt-5.4 T=90 achieves the best cascade accuracy (54.2%)** but also the highest cascade cost. This is the only configuration where the accuracy gain over T=60 is even marginally detectable (+0.5 pp), driven by gpt-5.4's genuine superiority on GPQA (+1.1 pp from 3% escalation).
+
+---
+
+### 7. Comparison to Standalone Models
+
+The cascade method's fundamental failure can be summarized in one comparison:
+
+| Option | Macro Accuracy | Avg Latency | Avg Cost | Reward |
+| --- | --- | --- | --- | --- |
+| Best cascade (gpt-5.4-mini→gpt-5.4 T=90) | 54.2% | ~36s | 0.251 m$ | −0.838 |
+| gpt-5.4-mini standalone | 60.6% | 36.1s | 0.138 m$ | −0.756 |
+| gpt-4.1 standalone | 68.3% | 10.1s | 0.687 m$ | −0.419 |
+| gpt-5.4 standalone | **90.8%** | **11.9s** | 5.37 m$ | **−0.217** |
+
+The best cascade configuration (54.2%) is outperformed on every single dimension by standalone gpt-4.1 — which is more accurate (68.3%), 3.5× faster (10.1s vs ~36s), and has only marginally higher cost. In the heatmap analysis (chart C3), no cascade configuration wins even a single cell across the entire (λ_error × λ_latency) parameter space when compared against all standalone models simultaneously.
+
+---
+
+### 8. Key Conclusions
+
+**1. Overconfidence is the cascade method's fatal flaw in this setting.** The entire premise of cascade is that low-confidence small-model answers get escalated. If the model never produces low-confidence scores — because it is overconfident — the method reduces to the small model alone, with added overhead.
+
+**2. The three thresholds (T=60, 75, 90) are functionally equivalent.** Since models rarely fall below any of these thresholds, changing the threshold produces no meaningful change in any metric. For thesis purposes, the result is: the threshold hyperparameter of cascade is irrelevant when model confidence is miscalibrated.
+
+**3. Cascade is most useful when there is a large capability gap between small and large models.** In this benchmark, even the "gap" between gpt-5.4-mini and gpt-5.4 on hard tasks is narrower than expected — and the large model's advantages are never leveraged due to non-escalation. A better deployment context for cascade would be a setting where the small model is a much weaker model (e.g., a 7B local model) and the large model is genuinely rare-but-powerful.
+
+**4. The latency of small models is the dominant cascade bottleneck.** Even ignoring escalation entirely, gpt-5.4-mini's 36s average latency means the cascade is inherently slow. The large model adds further latency on the rare questions that are escalated. In contrast, gpt-4.1 standalone answers in 10.1s at 68.3% accuracy — a fundamentally better operating point.
+
+---
+
+## Router Optimization — Comprehensive Analysis
+
+### 1. How the Router Works
+
+The router strategy uses a dedicated **classifier model** to inspect each query and decide upfront which model should answer it — the cheap small model or the powerful large model. Unlike cascade (which uses the small model's own confidence), the router makes the routing decision *before* any generation, using a separate model trained or prompted to predict query difficulty.
+
+Four configurations were evaluated, crossing two router models with two small/large pairings:
+
+| Router model | Small model | Large model |
+| --- | --- | --- |
+| gpt-4.1-mini | gpt-4.1-mini | gpt-4.1 |
+| gpt-4.1-mini | gpt-5.4-mini | gpt-5.4 |
+| gpt-5.4-mini | gpt-4.1-mini | gpt-4.1 |
+| gpt-5.4-mini | gpt-5.4-mini | gpt-5.4 |
+
+The key structural difference from cascade is that the routing decision is a genuine upfront binary classification, not a confidence threshold applied post-hoc to a model's self-reported score.
+
+---
+
+### 2. Routing Rates: The Router Actually Escalates
+
+The most immediate contrast with cascade is that the router directs a **meaningful fraction** of queries to the large model:
+
+| Configuration | Overall % to large | HumanEval | MBPP | MMLU-Pro | GPQA | GSM8K |
+| --- | --- | --- | --- | --- | --- | --- |
+| rtr=gpt-4.1-mini → small=4.1-mini/large=4.1 | 11.4% | 1.8% | 1.4% | 16.0% | **40.8%** | 0.0% |
+| rtr=gpt-4.1-mini → small=5.4-mini/large=5.4 | 10.7% | 1.2% | 1.1% | 15.3% | **39.8%** | 0.0% |
+| rtr=gpt-5.4-mini → small=4.1-mini/large=4.1 | 25.1% | 0.6% | 1.6% | 36.8% | **42.2%** | 21.4% |
+| rtr=gpt-5.4-mini → small=5.4-mini/large=5.4 | 26.3% | 0.6% | 0.6% | 36.6% | **43.3%** | 25.8% |
+
+The router demonstrates clear **task-aware routing**: it routes almost nothing from HumanEval and MBPP (coding tasks, where the small models already perform well) to the large model, while routing 40–43% of GPQA questions and 16–37% of MMLU-Pro questions — the two hardest knowledge-intensive benchmarks. GSM8K shows an interesting split: the gpt-4.1-mini router sends 0% while the gpt-5.4-mini router sends 21–26%, suggesting the two routers have different difficulty thresholds for math reasoning.
+
+This is the opposite of cascade: **the router knows what it doesn't know** (or at least knows what tasks are hard), while cascade's small models were overconfident and rarely triggered escalation.
+
+---
+
+### 3. Accuracy Results
+
+### 3.1 Macro-Average Accuracy
+
+| Configuration | Router macro-acc | Small standalone | Large standalone | Gain vs small |
+| --- | --- | --- | --- | --- |
+| rtr=gpt-4.1-mini / 4.1-mini → 4.1 | 58.2% | 57.6% | 68.3% | **+0.6 pp** |
+| rtr=gpt-4.1-mini / 5.4-mini → 5.4 | 60.8% | 60.6% | 90.8% | **+0.2 pp** |
+| rtr=gpt-5.4-mini / 4.1-mini → 4.1 | **73.1%** | 57.6% | 68.3% | **+15.5 pp** |
+| rtr=gpt-5.4-mini / 5.4-mini → 5.4 | **77.0%** | 60.6% | 90.8% | **+16.4 pp** |
+
+The picture splits sharply by **which router model is used**:
+
+- **gpt-4.1-mini as router**: almost no accuracy gain (+0.2–0.6 pp). This router routes only ~11% of questions, concentrated in GPQA, yielding minimal improvement.
+- **gpt-5.4-mini as router**: dramatic accuracy improvement (+15–16 pp). This router escalates ~25% of questions and — crucially — routes them to the right datasets. **The gpt-5.4-mini → gpt-5.4 configuration achieves 77.0% macro-accuracy**, making it the single most accurate optimization method in the entire study.
+
+Notably, both gpt-5.4-mini router configurations **surpass their large model standalone baseline** (gpt-4.1: 68.3%) despite the large model handling only ~25% of queries. The gpt-5.4-mini router effectively combines the small model's speed on easy tasks with the large model's accuracy on hard tasks.
+
+### 3.2 Per-Dataset Accuracy — gpt-5.4-mini Router
+
+The gpt-5.4-mini router's performance is best understood at the dataset level:
+
+| Dataset | Small alone | Router (5.4mini→4.1) | Router (5.4mini→5.4) | Large alone (4.1 / 5.4) |
+| --- | --- | --- | --- | --- |
+| HumanEval | 88.3% / 91.4% | 92.0% (+0.6%) | 88.3% (±0) | 92.4% / 94.0% |
+| MBPP | 81.0% / 82.7% | 82.7% (+0%) | 81.0% (±0) | 100.0% / 94.0% |
+| MMLU-Pro | 41.6% / 27.8% | **59.1%** (+17.5 pp) | **71.4%** (+29.8 pp) | 50.1% / 90.0% |
+| GPQA | 39.6% / 34.3% | **58.5%** (+19 pp) | **66.3%** (+27 pp) | 45.7% / 84.0% |
+| GSM8K | 52.2% / 51.9% | **73.1%** (+21 pp) | **77.8%** (+26 pp) | 53.1% / 92.0% |
+
+The gains are concentrated precisely where the router sends queries to the large model. MMLU-Pro (+29.8 pp), GPQA (+27 pp), and GSM8K (+26 pp) all benefit enormously from receiving gpt-5.4 answers on the hardest ~37–44% of questions. HumanEval and MBPP barely change (≤0.6 pp) because the router correctly withholds them from expensive escalation.
+
+For the gpt-5.4-mini → gpt-5.4 router, the MMLU-Pro result of **71.4%** substantially exceeds both standalone models' individual results at similar routing rates (gpt-5.4-mini at 41.6%, gpt-4.1-mini router which only achieves 41.8%), confirming the accuracy benefits are real and substantial.
+
+### 3.3 gpt-4.1-mini Router: Why It Underperforms
+
+The gpt-4.1-mini router routes 40% of GPQA to the large model — nearly identical to the gpt-5.4-mini router — yet achieves only 36.2% on GPQA versus 58.5% or 66.3% for the gpt-5.4-mini routers. The difference is GSM8K: the gpt-4.1-mini router routes **0%** of GSM8K to the large model, while the gpt-5.4-mini router correctly routes 21–26%. GSM8K standalone accuracies (gpt-4.1-mini: 51.9%, gpt-4.1: 53.1%) are nearly identical — so missing the escalation on GSM8K means no gain. But more importantly, gpt-4.1-mini's router simply perceives fewer MMLU-Pro questions as hard (16% vs 37%), yielding far lower MMLU-Pro accuracy (28.9% vs 59.1–71.4%).
+
+In short: **the gpt-5.4-mini router is a better router** — it is more aggressive in escalating difficult knowledge-reasoning tasks and correctly withholds escalation on easy ones.
+
+---
+
+### 4. Cost Analysis
+
+### 4.1 Overall Cost Comparison
+
+| Configuration | Router cost | Small standalone | Large standalone |
+| --- | --- | --- | --- |
+| rtr=gpt-4.1-mini / 4.1-mini → 4.1 | 0.401 m$ | 0.255 m$ | 0.687 m$ |
+| rtr=gpt-4.1-mini / 5.4-mini → 5.4 | 0.403 m$ | 0.138 m$ | 5.370 m$ |
+| rtr=gpt-5.4-mini / 4.1-mini → 4.1 | 0.344 m$ | 0.255 m$ | 0.687 m$ |
+| rtr=gpt-5.4-mini / 5.4-mini → 5.4 | **0.231 m$** | 0.138 m$ | 5.370 m$ |
+
+All router configurations are **significantly cheaper than their large model standalone** — the gpt-5.4-mini → gpt-5.4 router at 0.231 m$ is 23× cheaper than standalone gpt-5.4 (5.37 m$) while achieving 77.0% accuracy versus 90.8%.
+
+However, all router configurations are **more expensive than their small model standalone** — the routing decision itself adds overhead (a separate inference call per query), and the ~11–26% of queries that hit the large model add meaningful cost. The gpt-5.4-mini → gpt-5.4 router (0.231 m$) is 67% more expensive than gpt-5.4-mini standalone (0.138 m$), but the +16.4 pp accuracy gain justifies this in many use cases.
+
+### 4.2 GPQA: Where the Cost Concentrates
+
+| Dataset | rtr=5.4-mini / 5.4-mini → 5.4 | gpt-5.4-mini standalone | gpt-5.4 standalone |
+| --- | --- | --- | --- |
+| HumanEval | 0.279 m$ | 0.221 m$ | 2.010 m$ |
+| MBPP | 0.249 m$ | 0.196 m$ | 4.876 m$ |
+| MMLU-Pro | 0.242 m$ | 0.093 m$ | 4.120 m$ |
+| GPQA | **0.289 m$** | 0.124 m$ | **14.808 m$** |
+| GSM8K | 0.095 m$ | 0.056 m$ | 1.033 m$ |
+
+Even with 43.3% of GPQA queries routed to gpt-5.4, the GPQA cost (0.289 m$) remains only 2% of what pure gpt-5.4 costs (14.808 m$) — demonstrating the extreme cost efficiency of only partially routing to the expensive model. The MMLU-Pro dataset shows similar efficiency: 36.6% routing to gpt-5.4 yields 0.242 m$ versus 4.120 m$ for pure gpt-5.4.
+
+---
+
+### 5. Latency Results
+
+| Configuration | Router lat | Small standalone | Large standalone |
+| --- | --- | --- | --- |
+| rtr=gpt-4.1-mini / 4.1-mini → 4.1 | 23.6s | 23.9s | 10.1s |
+| rtr=gpt-4.1-mini / 5.4-mini → 5.4 | 36.9s | 36.1s | 11.9s |
+| rtr=gpt-5.4-mini / 4.1-mini → 4.1 | 24.8s | 23.9s | 10.1s |
+| rtr=gpt-5.4-mini / 5.4-mini → 5.4 | 37.7s | 36.1s | 11.9s |
+
+Latency is dominated by the small model's latency (since ~74–89% of queries go there), and the router overhead is small (~0.7–1.6s per query). The router configurations with gpt-5.4-mini as the small model are inherently slow (37–38s) regardless of the router — this latency cost is the primary reason these configurations cannot beat standalone gpt-5.4 (11.9s) in economic reward, despite achieving 77% accuracy.
+
+A practical trade-off emerges: the router dramatically improves accuracy at the cost of the small model's latency floor, but it cannot escape the slow-small-model problem. Using a fast small model (gpt-4.1-mini, 23.9s) with a gpt-5.4-mini router achieves gpt-4.1-class latency while substantially improving accuracy (73.1% vs 68.3% for gpt-4.1 standalone).
+
+---
+
+### 6. Economic Reward
+
+| Configuration | Router reward | Small standalone | Large standalone |
+| --- | --- | --- | --- |
+| rtr=gpt-4.1-mini / 4.1-mini → 4.1 | −0.654 | −0.663 | −0.419 |
+| rtr=gpt-4.1-mini / 5.4-mini → 5.4 | −0.762 | −0.756 | **−0.217** |
+| rtr=gpt-5.4-mini / 4.1-mini → 4.1 | **−0.518** | −0.663 | −0.419 |
+| rtr=gpt-5.4-mini / 5.4-mini → 5.4 | −0.607 | −0.756 | **−0.217** |
+
+**The gpt-5.4-mini / gpt-4.1-mini → gpt-4.1 router achieves reward −0.518, which is the best reward of any optimization method across all three strategies (cascade, self-consistency, router).** This is also better than the small model standalone (−0.663), confirming a genuine improvement in the reward metric.
+
+However, it still falls short of standalone gpt-4.1 (−0.419) and standalone gpt-5.4 (−0.217). The gap to gpt-5.4 is large: the best router is 0.30 reward units below the best standalone. The primary reasons:
+
+1. **Latency penalty**: gpt-5.4-mini as small model adds ~36s of latency per query, accumulating a penalty of $\lambda_l \times 36 \approx 0.36$ reward units per query.
+2. **Accuracy gap**: 77% (best router) vs 90.8% (gpt-5.4 standalone) — a 13.8 pp gap that contributes $\lambda_e \times 0.138 = 0.138$ reward units of penalty per query.
+
+The gpt-5.4-mini → gpt-5.4 router has better accuracy but worse reward than the gpt-5.4-mini → gpt-4.1 router (−0.607 vs −0.518) because the gpt-5.4 large model queries are far more expensive (14.8 m$ per GPQA query vs 0.77 m$ for gpt-4.1), eroding the reward despite the accuracy gain.
+
+---
+
+### 7. Comparison to All Standalones
+
+| Option | Macro Acc | Avg Latency | Avg Cost | Reward |
+| --- | --- | --- | --- | --- |
+| gpt-4.1-mini standalone | 57.6% | 23.9s | 0.255 m$ | −0.663 |
+| gpt-5.4-mini standalone | 60.6% | 36.1s | 0.138 m$ | −0.756 |
+| **Best router** (gpt-5.4-mini rtr / gpt-4.1-mini→gpt-4.1) | **73.1%** | 24.8s | 0.344 m$ | **−0.518** |
+| gpt-4.1 standalone | 68.3% | 10.1s | 0.687 m$ | −0.419 |
+| o3-mini standalone | 83.3% | 61.6s | 4.659 m$ | −0.787 |
+| gpt-5.4 standalone | 90.8% | **11.9s** | 5.370 m$ | **−0.217** |
+| gpt-5.4-pro standalone | 93.2% | 47.2s | 106.021 m$ | −0.646 |
+
+In the heatmap across the full (λ_error × λ_latency) parameter space (chart R3), no router configuration wins any cell. The best router (73.1% acc, −0.518 reward) is outperformed by:
+
+- **gpt-4.1 standalone** at identical latency but better reward (−0.419), lower cost, and simpler deployment.
+- **gpt-5.4 standalone** at higher accuracy and much better reward once accuracy is prioritized enough (high λ_e).
+
+The router's closest comparison is gpt-4.1 standalone: the best router beats gpt-4.1 on accuracy by +4.8 pp and costs half as much (0.344 vs 0.687 m$), but gpt-4.1 is 2.5× faster (10.1s vs 24.8s). Under the default economic reward formula, gpt-4.1's latency advantage outweighs the router's accuracy and cost advantages, giving gpt-4.1 the better reward (−0.419 vs −0.518). Under an **accuracy-only** or **cost-weighted** objective, the router would win this specific comparison.
+
+---
+
+### 8. Key Conclusions
+
+**1. The router is the most effective optimization method in this study.** Unlike cascade (which barely escalated anything) and self-consistency (which will be analyzed separately), the router achieves meaningful accuracy improvements — up to +16.4 pp macro-accuracy over the small model — by successfully identifying hard queries and escalating them to the large model.
+
+**2. Router model choice is the dominant factor.** The gpt-5.4-mini router dramatically outperforms the gpt-4.1-mini router (+14.9 pp accuracy for the same small/large pairing), because gpt-5.4-mini has better difficulty-prediction calibration — particularly for GSM8K and MMLU-Pro. This finding has architectural implications: the router quality matters more than the small/large pairing.
+
+**3. The router achieves task-aware routing.** Routing rates of 0–2% on HumanEval/MBPP versus 37–43% on GPQA/MMLU-Pro show the router has genuinely learned which task types require the larger model. This is behavior cascade cannot reproduce because cascade relies on self-reported confidence, which is poorly calibrated for modern LLMs.
+
+**4. The latency of the small model is the binding constraint on reward.** Even the best router cannot overcome the 36s latency floor imposed by gpt-5.4-mini as the base model. The gpt-5.4-mini router with gpt-4.1-mini as the small model (24.8s avg latency) achieves better reward (−0.518) than with gpt-5.4-mini as the small model (37.65s, −0.607), despite the latter achieving higher accuracy (77.0% vs 73.1%). Choosing a fast small model is more reward-efficient than adding accuracy.
+
+**5. The router fails to displace standalone frontier models in the reward ranking** because gpt-4.1 and gpt-5.4 already occupy favorable accuracy/latency/cost operating points. The router would become competitive if (a) the small model were faster (reducing latency penalty), (b) the large model's accuracy advantage were larger (increasing the payoff from routing), or (c) the application prioritizes accuracy over latency and the comparison set excludes cost.
+
+---
+
+## Self-Consistency (SC) — Comprehensive Analysis
+
+### 1. How Self-Consistency Works
+
+Self-consistency (SC) is a voting-based ensemble strategy. For each query, the target model is called **N times independently**, each time sampling a different answer. The final answer is determined by **majority vote** across the N responses. The underlying intuition is that correct reasoning paths appear more frequently than incorrect ones when a model is sampled repeatedly, so the plurality answer is more likely to be correct.
+
+Two configurations were evaluated, both with N=3 votes:
+
+| Model | N | Total records |
+| --- | --- | --- |
+| gpt-4.1-mini | 3 | 250 (50 per dataset) |
+| gpt-5.4-mini | 3 | 250 (50 per dataset) |
+
+**Important methodological note:** The SC evaluation uses a dedicated sample of 50 questions per dataset (250 total), while the standalone baseline evaluations use full dataset sizes (162–996 questions per dataset). Results are therefore directionally informative but should not be treated as exact substitutes — the smaller samples introduce higher variance, and the 50-question subsets may not perfectly represent the full dataset difficulty distribution.
+
+---
+
+### 2. Agreement Rate — The Central Diagnostic Metric
+
+The agreement rate measures what fraction of questions received **identical answers across all N=3 votes**. High agreement means the model is consistent; low agreement means the model is uncertain and the majority-vote mechanism provides the most benefit (but also the most noise).
+
+| Config | Overall agreement | HumanEval | MBPP | MMLU-Pro | GPQA | GSM8K |
+| --- | --- | --- | --- | --- | --- | --- |
+| gpt-4.1-mini N=3 | **58.4%** | 48.0% | 36.0% | 74.0% | 76.0% | 58.0% |
+| gpt-5.4-mini N=3 | **47.6%** | 44.0% | 26.0% | 56.0% | 58.0% | 54.0% |
+
+**gpt-4.1-mini is more internally consistent** than gpt-5.4-mini across all five datasets. gpt-5.4-mini achieves full agreement on only 47.6% of questions overall — meaning more than half of all SC evaluations involve at least one vote disagreement, leaving majority vote to decide the outcome.
+
+The dataset-level pattern reveals a clear split by task type:
+
+- **MMLU-Pro and GPQA**: Highest agreement (56–76%). These are multiple-choice knowledge tasks where the model tends to converge on the same choice across samples, even if that choice is wrong. High agreement here does not imply high accuracy.
+- **MBPP**: Lowest agreement (26–36%). Code generation produces diverse outputs across samples — different variable names, different algorithmic approaches — even when all solutions are functionally correct. This makes raw string equality a poor agreement metric for coding tasks.
+- **HumanEval**: Low-moderate agreement (44–48%). Similar dynamic to MBPP — code diversity reduces string-level consensus.
+- **GSM8K**: Moderate agreement (54–58%). Math reasoning produces more consistent chain-of-thought paths than open-ended coding, but step-by-step solutions still vary in phrasing.
+
+---
+
+### 3. Accuracy Results
+
+### 3.1 SC vs. Standalone Baseline
+
+| Dataset | gpt-4.1-mini base | SC 4.1-mini N=3 | Gain | gpt-5.4-mini base | SC 5.4-mini N=3 | Gain |
+| --- | --- | --- | --- | --- | --- | --- |
+| HumanEval | 91.4% | **94.0%** | +2.6 pp | 88.3% | **92.0%** | +3.7 pp |
+| MBPP | 82.7% | **82.0%** | −0.7 pp | 81.0% | **82.0%** | +1.0 pp |
+| MMLU-Pro | 27.8% | **44.0%** | **+16.2 pp** | 41.6% | **44.0%** | +2.4 pp |
+| GPQA | 34.3% | **48.0%** | **+13.7 pp** | 39.6% | **46.0%** | +6.4 pp |
+| GSM8K | 51.9% | **54.0%** | +2.1 pp | 52.2% | **52.0%** | −0.2 pp |
+| **Macro** | **57.6%** | **64.4%** | **+6.8 pp** | **60.6%** | **63.2%** | **+2.6 pp** |
+
+SC N=3 improves over standalone for both models at the macro level (+6.8 pp for gpt-4.1-mini, +2.6 pp for gpt-5.4-mini). The pattern of gains is highly non-uniform across datasets:
+
+**MMLU-Pro is the largest beneficiary.** gpt-4.1-mini SC gains +16.2 pp (27.8% → 44.0%). This is the dataset where the model shows high agreement (74%), meaning the majority-vote mechanism has clear candidates to choose among. The gain here likely reflects SC's classic mechanism: the model occasionally reasons correctly to the right multiple-choice answer, and aggregation amplifies these correct votes over noise. For gpt-5.4-mini, the gain is smaller (+2.4 pp) because gpt-5.4-mini already starts from a stronger base (41.6%).
+
+**GPQA shows the second-largest gains** (+13.7 pp for gpt-4.1-mini, +6.4 pp for gpt-5.4-mini). GPQA is the hardest benchmark (graduate-level science), and SC appears to provide meaningful benefit on high-difficulty multiple-choice questions where random variation across samples occasionally captures the correct reasoning path.
+
+**HumanEval gains are modest but positive** (+2.6–3.7 pp). Despite low agreement, the majority-vote mechanism still slightly improves coding accuracy, likely because functionally correct code paths are generated with somewhat higher frequency than incorrect ones.
+
+**MBPP and GSM8K are effectively neutral** (−0.7 to +2.1 pp). MBPP gains nothing from SC for gpt-4.1-mini, with high vote diversity producing no consistent majority signal. GSM8K shows only marginal gains despite moderate agreement, suggesting the model's arithmetic errors are systematic rather than random — voting doesn't help when the model makes the same mistake across all three samples.
+
+### 3.2 SC vs. Stronger Standalones
+
+Even the best SC result (gpt-4.1-mini N=3 at 64.4%) falls well short of stronger baseline models:
+
+| Model | Macro accuracy |
+| --- | --- |
+| gpt-4.1-mini N=3 SC | 64.4% |
+| gpt-4.1 standalone | **68.3%** |
+| gpt-5.4-mini N=3 SC | 63.2% |
+
+The gpt-4.1-mini SC configuration (64.4%) still lags gpt-4.1 standalone (68.3%) by 3.9 pp. For N=3 SC on gpt-5.4-mini (63.2%), the gap to gpt-4.1 standalone is 5.1 pp. The voting ensemble cannot close the capability gap between model generations.
+
+---
+
+### 4. Cost Analysis
+
+| Config | SC cost/query | Standalone baseline | Multiplier |
+| --- | --- | --- | --- |
+| gpt-4.1-mini N=3 | **0.317 m$** | 0.255 m$ | 1.24× |
+| gpt-5.4-mini N=3 | **0.310 m$** | 0.138 m$ | 2.24× |
+
+SC with N=3 requires 3 inference calls, so cost scales approximately linearly. gpt-4.1-mini N=3 costs 1.24× its standalone (slightly below 3× because the baseline cost includes overhead that doesn't triple). gpt-5.4-mini N=3 costs 2.24× standalone — still below 3× by a similar factor.
+
+By dataset, GPQA remains the most expensive (0.383 m$ for gpt-4.1-mini SC, 0.304 m$ for gpt-5.4-mini SC), consistent with GPQA consistently generating the longest context responses across all experiments.
+
+Compared to all other optimization methods, SC is the **second-cheapest approach after running the small model alone**, and substantially cheaper than router or cascade configurations that involve expensive large-model calls. The cost increase over standalone is modest and predictable: exactly N× the per-query cost.
+
+---
+
+### 5. Latency
+
+| Config | SC latency | Standalone latency |
+| --- | --- | --- |
+| gpt-4.1-mini N=3 | **2.03s** | 23.94s |
+| gpt-5.4-mini N=3 | **1.76s** | 36.13s |
+
+The SC latency values (1.76–2.03s) are dramatically lower than standalone latency. This is best explained by the SC implementation running all N=3 calls **in parallel** — the recorded `elapsed_s` captures wall-clock time with concurrent execution, approximating the latency of a single call rather than N×latency. Under this interpretation, SC latency is essentially the same as calling the model once (approximately max of 3 parallel calls rather than sum). The 1–2s figure also reflects that this evaluation subset uses shorter prompts than the full standalone evaluation set.
+
+This parallel-execution latency profile is a genuine advantage of SC in production: if the N calls can be dispatched simultaneously, real-world latency does not multiply by N — only cost does.
+
+---
+
+### 6. Economic Reward
+
+| Config | SC reward | Standalone reward |
+| --- | --- | --- |
+| gpt-4.1-mini N=3 | **−0.377** | −0.663 |
+| gpt-5.4-mini N=3 | **−0.386** | −0.756 |
+
+Both SC configurations achieve dramatically better economic reward than their standalone baselines. The reward improvement is driven by two factors:
+
+1. **Accuracy gain** (+6.8 / +2.6 pp) reduces the accuracy penalty term
+2. **Low latency** (2s vs 24–36s) almost eliminates the latency penalty term ($\lambda_l \times latency \approx 0.02$ for SC vs. 0.24–0.36 for standalone)
+
+However, the comparison is partly confounded by the evaluation methodology: SC uses a 50-question subset per dataset while standalone uses the full evaluation set. Different dataset samples can produce different difficulty distributions, meaning part of the reward improvement may reflect a more favorable question sample rather than purely the SC voting mechanism.
+
+Taking the reward at face value: gpt-4.1-mini N=3 SC (−0.377) approaches but does not beat gpt-5.4 standalone (−0.217), and does not appear in any heatmap winning cell (chart SC3) precisely because gpt-5.4 remains dominant at low penalty / latency thresholds.
+
+---
+
+### 7. Why SC Does Not Win in Heatmaps
+
+The heatmap analysis (chart SC3) tests whether any SC configuration produces better economic reward than all standalone models simultaneously, across the (λ_error × λ_latency) parameter space. No SC configuration wins any cell. The reasons:
+
+- **gpt-5.4 dominates any accuracy-prioritized region**: 90.8% accuracy vs. 64.4% SC — a 26 pp gap SC cannot bridge with N=3.
+- **gpt-4.1 and gpt-5.4-mini dominate the cost/latency-sensitive region**: At high λ_latency, the low-cost/fast models win, and SC's latency advantage (parallel calls) is already embedded in the standalone models' naturally faster response times.
+- **SC adds cost without proportionate accuracy gain**: Each additional vote multiplies cost by N while the accuracy gain is sublinear — SC N=3 gains 6.8 pp at 1.24× cost, but going from 57.6% to 64.4% does not cross the threshold needed to surpass gpt-4.1 standalone at 68.3%.
+
+---
+
+### 8. Key Conclusions
+
+**1. SC is the most straightforward of the three optimization methods.** The mechanism is transparent, reproducible, and consistently improves accuracy: both models gain measurably from three-way majority voting, with gains concentrated where the model's natural variance is highest (MMLU-Pro, GPQA).
+
+**2. gpt-4.1-mini benefits more from SC (+6.8 pp) than gpt-5.4-mini (+2.6 pp).** The MMLU-Pro dataset drives this difference: gpt-4.1-mini starts at 27.8% (effectively near random for a 10-option benchmark) and SC lifts it to 44.0%. gpt-5.4-mini at 41.6% already partially captures MMLU-Pro's correct answers and has less room to gain from voting.
+
+**3. High agreement does not imply high accuracy.** GPQA and MMLU-Pro show the highest agreement rates (56–76%) yet the lowest absolute accuracies (44–48%). The models vote consistently for wrong answers. This is the classic "overconfident majority" failure mode: SC amplifies consistent errors, not just consistent correct answers.
+
+**4. The cost scaling is the binding constraint for SC.** SC with N=3 costs 2–3× the standalone model. Achieving the same accuracy improvement at lower cost — for example, by using a stronger single model — is generally possible from the standalone model landscape: gpt-4.1 at 68.3% accuracy is cheaper per query than gpt-4.1-mini N=3 SC (0.687 m$ vs 0.317 m$, but note gpt-4.1 processes ~10× more questions in the full evaluation). In a direct comparable test, spending 3× the gpt-4.1-mini budget on gpt-4.1 would likely outperform SC on the same questions.
+
+**5. Parallel execution neutralizes SC's latency penalty.** The key practical advantage of SC over cascade and router is that N model calls can be dispatched simultaneously with no sequential dependency. This makes SC latency-equivalent to a single call in production systems that support concurrent requests, while cascade and router always require sequential steps (small model first, then fallback/routing decision).
+
+
+---
+
+## Chapter 4 — Methodology and Research Design
+
+### 4.1 Research Approach
+
+This study is **empirical**, **experimental**, and **quantitative** in nature, with comparative interpretation of results.
+
+It is **empirical** because it is grounded entirely in real API calls to production deployments of large language models, producing observable measurements of latency, token consumption, cost, and answer correctness per query. No simulations, approximations of model behaviour, or synthetic latency values are used in place of live measurements.
+
+It is **experimental** because the researcher controls which model receives which test item, which optimization strategy is applied, and under what configuration — allowing systematic variation of one factor at a time while holding others constant. The benchmark items themselves are fixed, deterministic inputs, enabling controlled repeated exposure of different models to the same stimulus.
+
+It is **comparative** because the core research activity is contrasting outcomes across models and optimization strategies. No single model or strategy is evaluated in isolation; every result is interpreted relative to others within the same evaluation framework.
+
+It is **quantitative** because the primary outputs — accuracy, latency, cost, and economic reward — are numerical and directly comparable. Qualitative interpretation is applied only when interpreting the meaning of numerical patterns (e.g., the significance of a capability gap between model generations, or the asymmetric routing behaviour of different router models).
+
+This design fits the research questions directly. The thesis asks whether optimization strategies (cascade, router, self-consistency) improve on standalone model performance under a cost-efficiency criterion, and whether reasoning-enabled models justify their overhead. Both questions require controlled numerical measurement across a consistent evaluation corpus and a unified comparison metric.
+
+---
+
+### 4.2 Overall Study Design
+
+The study is structured in two phases.
+
+**Phase 1 — Standalone baseline evaluation.** Each of the six models is evaluated independently on all five benchmark datasets. Every test item is sent as a separate API request, and the response is recorded with its associated metadata: raw model output, token counts, wall-clock latency, and derived cost. These results form the baseline against which optimization strategies are compared.
+
+**Phase 2 — Optimization strategy evaluation.** Three optimization strategies (router, cascade, self-consistency) are applied. Unlike Phase 1, these strategies operate on the already-collected standalone results from Phase 1 wherever possible — the router and cascade strategies re-use stored responses from pre-run models and make only minimal new API calls (router classification calls; cascade escalation calls to the large model when triggered). Self-consistency requires fresh multi-sample inference and is run as a separate API evaluation pass on a dedicated question subset.
+
+All phases share the same dataset files (loaded from HuggingFace), the same evaluation logic ([tester.py](http://tester.py/)), and the same economic reward formula. The comparison framework is therefore fully symmetric: every condition — standalone, cascade, router, and self-consistency — is evaluated against the same correctness criteria and the same reward formula.
+
+The **benchmarking framework** consists of:
+
+- humaneval_explore.py — request dispatcher and result logger
+- [optimizer.py](http://optimizer.py/) — optimization strategy runner (reads stored results, makes routing/classification API calls)
+- [tester.py](http://tester.py/) — post-hoc correctness evaluator and reward computer
+- [visualize.py](http://visualize.py/) — chart and heatmap generator for analysis
+
+---
+
+### 4.3 Studied Models
+
+Six models were selected to cover the key axes of variation in the current Azure OpenAI/AI Foundry model landscape: model generation (4.1 vs 5.4 series), capability tier (mini vs full vs pro), and inference paradigm (standard generation vs reasoning-enabled).
+
+**gpt-4.1-mini**
+
+- Provider/deployment: Azure OpenAI (endpoint `aoi-duerr-chat`, Chat Completions API)
+- Pricing: \$0.40 / \$1.60 per 1M input/output tokens
+- Classification: Standard generation, no reasoning effort
+- Role: Cheapest and most widely representative small model; baseline for cascade and self-consistency optimization; serves as the small-model arm in two router configurations
+
+**gpt-4.1**
+
+- Provider/deployment: Azure OpenAI (endpoint `aoi-duerr-chat`, Chat Completions API)
+- Pricing: \$2.00 / \$8.00 per 1M tokens
+- Classification: Standard generation
+- Role: Mid-tier flagship of the 4.1 generation; serves as the large-model arm in two cascade and two router configurations; provides the primary accuracy/latency/cost reference for the 4.1 generation
+
+**gpt-5.4-mini**
+
+- Provider/deployment: Azure AI Foundry (`ar-foundry-experiments2`, Responses API, `reasoning_effort="none"`)
+- Pricing: ~\$0.25 / \$2.00 per 1M tokens
+- Classification: Standard generation (reasoning disabled at the API level)
+- Role: Cheapest 5.4-generation model; small-model arm in cascade and self-consistency; provides the gpt-5.4-mini router configurations
+
+**gpt-5.4**
+
+- Provider/deployment: Azure OpenAI (`aoi-duerr-chat`, Chat Completions API, `reasoning_effort="medium"`)
+- Pricing: ~\$1.25 / \$10.00 per 1M tokens
+- Classification: Reasoning-enabled
+- Role: 5.4-generation flagship with reasoning enabled; large-model arm in cascade and router configurations; primary accuracy reference for reasoning-capable models
+
+**o3-mini**
+
+- Provider/deployment: Azure OpenAI (`aoi-duerr-chat`, Chat Completions API, `reasoning_effort="medium"`)
+- Pricing: \$1.10 / \$4.40 per 1M tokens
+- Classification: Reasoning-enabled (dedicated reasoning architecture)
+- Role: Represents an explicitly reasoning-specialised model; expected to show strong performance on procedural and mathematical tasks
+
+**gpt-5.4-pro**
+
+- Provider/deployment: Azure AI Foundry (`ar-foundry-experiments2`, Responses API, `reasoning_effort="medium"`)
+- Pricing: ~\$15.00 / \$120.00 per 1M tokens
+- Classification: Frontier reasoning-enabled model
+- Role: Highest-capability, highest-cost model; expected accuracy ceiling; provides the upper bound for performance comparisons
+
+Models were selected to span a wide cost range (three orders of magnitude: \$0.25 to
+
+Read [](file:///c%3A/Repos/Bachelor%20Thesis%20Project/humaneval_explore.py#220-220), lines 220 to 560
+
+\$120 per 1M output tokens), to include both API generations (Chat Completions for 4.1/o3-mini/5.4 duerr; Responses API for 5.4-mini/5.4-pro on exp2), and to cover all four small/large pairing combinations required for the optimization strategy evaluation.
+
+---
+
+### 4.4 Task Selection
+
+Five benchmark tasks were selected. Together they cover the most commonly discussed dimensions of LLM capability: code generation, factual knowledge, scientific reasoning, and mathematical reasoning. These dimensions are directly relevant to Azure and cloud developer contexts, where LLMs are increasingly used for code assistance, documentation, automated Q&A, and technical problem-solving.
+
+**HumanEval (Code Generation)**
+HumanEval consists of 164 Python function stubs with corresponding unit tests, each requiring the model to complete a working function body. It tests the model's ability to understand a natural-language specification, produce syntactically valid Python, and implement correct logic. In an Azure/cloud context, this represents tasks such as automated code generation in GitHub Copilot-style scenarios or AI-assisted scripting.
+
+**MBPP — Mostly Basic Python Problems (Python Programming)**
+MBPP contains 500 Python programming problems with reference solutions and assertion-based test cases. Unlike HumanEval, which provides a complete function signature stub, MBPP presents a free-form description and requires full function generation including the function name. It tests a broader range of basic to intermediate programming skills. MBPP is relevant in cloud contexts as a proxy for developer productivity tasks and code quality automation.
+
+**MMLU-Pro (Multidisciplinary Knowledge Reasoning)**
+MMLU-Pro is a harder extension of the Massive Multitask Language Understanding benchmark, covering over 12,000 questions across 14 academic categories (mathematics, science, law, economics, etc.) in a 10-option multiple-choice format. The 10-option format substantially reduces the benefit of random guessing versus the original 4-option MMLU, making it a more demanding test of genuine knowledge. In cloud contexts, MMLU-Pro represents knowledge-intensive tasks such as document analysis, compliance checking, and intelligent Q&A over enterprise documentation.
+
+**GPQA — Graduate-Level Google-Proof Q&A (Expert Science Reasoning)**
+GPQA consists of 448 PhD-level science questions (biology, chemistry, physics) in multiple-choice format, designed to be difficult to answer with web search alone — requiring deep domain expertise. GPQA is the hardest benchmark in this study and provides the strongest discriminating signal between capable and frontier models. It represents use cases such as scientific literature analysis, advanced research assistant applications, or expert-level decision support systems.
+
+**GSM8K — Grade-School Math (Mathematical Reasoning)**
+GSM8K contains approximately 1,319 grade-school mathematics word problems requiring multi-step arithmetic reasoning. Despite the "grade-school" label, these problems require consistent multi-step chain-of-thought reasoning, and models that lack reliable arithmetic reasoning fail on a significant fraction. GSM8K is relevant for enterprise applications involving numerical analysis, budget calculation, or any scenario requiring quantitative inference over text.
+
+---
+
+### 4.5 Dataset / Prompts / Inputs
+
+**Data sources.** All five datasets are loaded from HuggingFace using the `datasets` library:
+
+- HumanEval: `openai_humaneval` (split `test`)
+- MBPP: `google-research-datasets/mbpp`, config `full` (split `test`)
+- MMLU-Pro: `TIGER-Lab/MMLU-Pro` (split `test`)
+- GPQA: `Idavidrein/gpqa`, config `gpqa_main` (split `train`), requiring a HuggingFace token and dataset access approval
+- GSM8K: `openai/gsm8k`, config `main` (split `test`)
+
+**Sample sizes per model.** Each model was evaluated on a fixed prefix of each dataset: the number of questions per dataset was held constant within a model run but varied across models due to practical constraints (cost and time). The smaller models (gpt-4.1-mini: 3,020 total; gpt-5.4-mini: 2,982 total) were evaluated on larger portions, while the more expensive models (gpt-5.4, gpt-5.4-pro) were evaluated on 50 questions per dataset (250 total). o3-mini used 1,287 records across datasets, and gpt-4.1 used 1,611. Self-consistency evaluations used exactly 50 questions per dataset (250 total) for both SC configurations.
+
+**Prompt construction.** Each dataset uses a task-specific system prompt to standardise model behaviour:
+
+- **HumanEval / MBPP**: `"You are a coding assistant. Return only raw Python code with no markdown fences, no comments, and no explanation."` — enforcing machine-parseable output for automated testing
+- **MMLU-Pro**: `"You are answering a multiple choice question. Respond with only the single letter of the correct option (e.g. 'A'). Nothing else."` — enabling exact-match evaluation
+- **GPQA**: `"You are answering a multiple choice question. Respond with only the exact answer text (not the letter). Nothing else."` — matching GPQA's answer format where correct answers are text strings, not letters
+- **GSM8K**: `"You are solving a math problem. Respond with only the final numerical answer. No explanation."` — enabling numerical answer extraction
+
+For the cascade strategy, the same prompts are augmented with a confidence-elicitation instruction appended to the system prompt: models are asked to append `CONFIDENCE:[0-100]` as a standalone final line in every response. The confidence score is parsed and stripped from the answer before evaluation.
+
+**Selection methodology.** Questions are taken from the beginning of each dataset in order (no random subsampling), ensuring reproducibility. The same question order is used consistently across all models and evaluation runs.
+
+**Data suitability.** All five benchmarks are well-established, peer-reviewed benchmarks with known difficulty profiles and published baselines, ensuring comparability with prior work. No sensitive, private, or proprietary data is used.
+
+---
+
+### 4.6 Evaluation Metrics
+
+**Correctness / Accuracy**
+
+*HumanEval*: The model's code response is combined with the function stub (prompt) to produce a complete function, then the HumanEval test suite is executed against it in an isolated subprocess. Pass = all assertions pass within a 10-second timeout. Fail = any exception, wrong output, or timeout.
+
+*MBPP*: The model's code response is executed with the provided `test_list` assertions (also in an isolated subprocess). Pass = all assertions pass. The test setup code and challenge tests are also available but only the primary `test_list` is used for pass/fail determination.
+
+*MMLU-Pro*: Exact string match of the model's single-letter response (e.g., `"C"`) against the correct option letter.
+
+*GPQA*: Exact string match of the model's answer text against the correct answer string. The answer options are shuffled per question to prevent position bias.
+
+*GSM8K*: The final numerical value is extracted from both the model's response and the reference answer (stripping units, comma separators, and extraneous text) and compared as numbers. A flexible extraction handles formats like `42`, `42.0`, `$42`, `42 apples`.
+
+All correctness evaluations produce a binary `is_correct` field (1 = pass, 0 = fail) stored per record in the JSONL output.
+
+**Accuracy** is reported as the percentage of records with `is_correct = 1` within a dataset or across all datasets (macro-average, with each dataset weighted equally).
+
+**Latency**: The wall-clock elapsed time in seconds from the moment the API request is dispatched to the moment the complete response is received (`elapsed_s`), measured using Python's `time.perf_counter()`. For self-consistency, all N=3 calls are dispatched in parallel via a thread pool; the recorded latency is the wall-clock time from batch dispatch to last response received (approximately the maximum of the three individual call latencies).
+
+**Token consumption**: Prompt tokens (`prompt_tokens`) and completion tokens (`completion_tokens`) are read from the API response's usage object for both the Chat Completions API and the Responses API.
+
+**Cost per request** (`cost_usd`): Derived from token counts using the per-model pricing table (see Section 4.7). Stored per record.
+
+**Economic reward** (`economic_reward`): A unified composite metric that jointly penalises error, latency, and cost in a single scalar:
+
+$$r = -\bigl(\text{cost\_usd} + \lambda_l \cdot \text{elapsed\_s} + \lambda_e \cdot (1 - \text{is\_correct})\bigr)$$
+
+with default parameters $\lambda_l = 0.01$ (latency weight, per second) and $\lambda_e = 1.0$ (error weight). The metric is negative by definition; higher values (closer to zero) are better. The heatmap analysis varies $\lambda_l$ and $\lambda_e$ over a grid to assess over which parameter regions each model or strategy dominates.
+
+---
+
+### 4.7 Cost Calculation Method
+
+Cost is computed deterministically from the token usage reported in the API response. The formula for each request is:
+
+$$\text{cost\_usd} = \frac{\text{prompt\*tokens}}{10^6} \cdot P*\text{in} + \frac{\text{completion\*tokens}}{10^6} \cdot P*\text{out}$$
+
+where $P_\text{in}$ and $P_\text{out}$ are the input and output token prices in USD per 1,000,000 tokens for the given model. The pricing table used is:
+
+| Model | Input (USD/1M) | Output (USD/1M) |
+| --- | --- | --- |
+| gpt-4.1 | \$2.00 | \$8.00 |
+| gpt-4.1-mini | \$0.40 | \$1.60 |
+| o3-mini | \$1.10 | \$4.40 |
+| gpt-5.4 | \$1.25 | \$10.00 |
+| gpt-5.4-mini | \$0.25 | \$2.00 |
+| gpt-5.4-pro | \$15.00 | \$120.00 |
+
+Prices reflect the Azure OpenAI and Azure AI Foundry pricing pages as of April 2026. The gpt-5.4 family (5.4, 5.4-mini, 5.4-pro) prices are treated as estimated because not all tiers appeared on the public pricing page at the time of evaluation; the figures used align with the best available information.
+
+**Input and output tokens are charged at different rates** (output tokens are consistently more expensive, typically 4–8× the input rate), and this differential is applied precisely for every request.
+
+**No cached pricing or batch pricing** is applied. All requests are assumed to be uncached standard requests. Prompt caching discounts offered by Azure (typically 50% on cached input tokens for longer contexts) are not modelled, since the benchmark sends each question as an independent request with no cross-request caching assumption.
+
+**For the cascade strategy**, the cost of a kept question is the cost of the small model's call only. The cost of an escalated question is the sum of the small model's call (which ran and generated the answer plus confidence score) and the large model's stored call cost (retrieved from the pre-existing result records). This correctly reflects the real-world cost of a cascade pipeline where the small model always runs first.
+
+**For the router strategy**, the cost of each question includes the router model's classification call (a short, cheap call) plus either the small or large model's pre-stored call cost, depending on the routing decision. The router's own API call cost is included.
+
+**For self-consistency**, the cost is the sum of N=3 independent API call costs, each computed from the respective token usage.
+
+**Assumptions**: (1) token counts reported by the API are accurate; (2) the same model deployment is used consistently within a run; (3) no volume discounts or enterprise pricing agreements are applied.
+
+---
+
+### 4.8 Proxy Architecture
+
+The infrastructure of this study does not include a network-level proxy in the traditional sense (no HTTP reverse proxy or API gateway is deployed between the benchmark runner and the Azure OpenAI endpoints). Instead, a **software-level instrumentation layer** is embedded directly in the Python evaluation client (`humaneval_explore.py` → `_send_and_log()`). This layer serves the same conceptual purpose as a proxy — intercepting requests, logging metadata, routing to the correct endpoint, and enabling strategy-level decision-making — but operates at the application level rather than the network level.
+
+**What the instrumentation layer does:**
+
+*Request routing*: Each model maps to a named endpoint configuration (`"duerr"` or `"exp2"`) and an API type (`"chat"` for Chat Completions, `"responses"` for the Responses API). The correct client instance and call pattern are selected transparently based on the model's configuration entry before the request is dispatched.
+
+*Parameter injection*: Model-specific extra parameters (e.g., `reasoning_effort="medium"`) are injected into each request at dispatch time without requiring the caller to specify them per-call.
+
+*Confidence elicitation*: For cascade evaluation, the instrumentation layer appends a standardised confidence-request instruction to the system prompt before dispatch, and post-processes the model's response to extract and strip the `CONFIDENCE:[N]` token from the final line of the response. The confidence value is stored separately from the answer.
+
+*Token and cost logging*: Immediately after each API call returns, the layer reads `usage.prompt_tokens` and `usage.completion_tokens` from the response object (mapped correctly for both API flavours: `response.usage.prompt_tokens` for Chat Completions, `response.usage.input_tokens` for the Responses API) and computes the per-call cost using the pricing table.
+
+*Latency measurement*: `time.perf_counter()` timestamp pairs are placed immediately before the API call and immediately after the response is received, ensuring that only network + model computation time is measured (not dataset loading or result serialisation).
+
+*Persistence*: Each API call's result — raw answer text, token counts, cost, latency, confidence score, and all task metadata — is written to a JSONL record file in a timestamped result directory (`results/YYYYMMDD_HHMMSS_<model>/`). One JSONL file is created per dataset stem per model run.
+
+**No caching, fallback, or filtering** is performed in the baseline evaluation phase. The instrumentation layer dispatches exactly one request per test item and records whatever the model returns. Failure handling is limited to catching API exceptions and recording `None` for the failed fields.
+
+**The [optimizer.py](http://optimizer.py/) layer** extends this architecture with strategy-level decision logic: the router makes a small API call to a classifier model, reads the routing decision from the response, and then fetches the corresponding pre-stored result record from the matching model's JSONL file rather than making a new API call for the generation step. The cascade layer reads the stored confidence score from the small model's record and conditionally fetches the large model's stored record. Self-consistency makes N=3 parallel API calls using a thread pool and reduces the responses to a majority vote.
+
+---
+
+### 4.9 Experimental Scenarios
+
+**Scenario S1 — Standalone model evaluation**
+Each of the six models is evaluated independently on all five benchmark datasets.
+
+- *What changes*: which model receives the requests
+- *What stays constant*: benchmark questions, prompts, evaluation criteria, cost formula
+- *Purpose*: establishes baseline accuracy, latency, and cost for each model; provides the reference distribution for optimization comparisons
+
+**Scenario S2 — Cascade evaluation** (12 configurations)
+Small models (gpt-4.1-mini, gpt-5.4-mini) answer each question, produce a confidence score, and escalate to a large model (gpt-4.1 or gpt-5.4) if confidence falls below threshold T ∈ {60, 75, 90}.
+
+- *What changes*: which small/large pairing is used; the confidence threshold
+- *What stays constant*: question set (drawn from small model's stored records), evaluation criteria, cost formula
+- *Purpose*: tests whether confidence-gated escalation can improve accuracy over the small model at acceptable cost
+
+**Scenario S3 — Router evaluation** (4 configurations)
+A classifier model (gpt-4.1-mini or gpt-5.4-mini) makes an upfront routing decision for each question, and the question is answered by either a small model (gpt-4.1-mini or gpt-5.4-mini) or a large model (gpt-4.1 or gpt-5.4) based on that decision.
+
+- *What changes*: which classifier model is used; which small/large pairing the classifier routes between
+- *What stays constant*: questions routed are the same ones from the pre-existing small model evaluation; evaluation criteria, cost formula
+- *Purpose*: tests whether upfront difficulty-aware routing can outperform cascade and standalone models
+
+**Scenario S4 — Self-consistency evaluation** (2 configurations)
+Each question is sent N=3 times in parallel to the target model (gpt-4.1-mini or gpt-5.4-mini) with temperature > 0, and the majority-vote answer is evaluated.
+
+- *What changes*: which model is used for SC; comparison baseline
+- *What stays constant*: 50-question subset per dataset (250 total), same prompts as standalone evaluation, evaluation criteria, cost formula
+- *Purpose*: tests whether voting over multiple samples improves accuracy relative to single-sample inference at the same model tier
+
+---
+
+### 4.10 Procedure
+
+**Step 1 — Dataset loading.** Each benchmark dataset is loaded via the HuggingFace `datasets` library at the start of each evaluation run. Questions are selected in order (items 0 through N-1) deterministically.
+
+**Step 2 — Request construction.** For each question, the appropriate system prompt is selected based on the dataset type. For cascade runs, the confidence-elicitation suffix is appended to the system prompt at this step.
+
+**Step 3 — Parallel dispatch.** Questions within a run are dispatched concurrently using a `ThreadPoolExecutor`. The number of concurrent threads equals the `count` parameter (i.e., the number of questions being processed). A threading lock serialises console output to prevent interleaving.
+
+**Step 4 — Response capture.** For each API call, the raw model output, token counts, latency, finish reason, and (for cascade) confidence score are captured from the API response and stored in the `results` dictionary under a `(dataset, index)` key.
+
+**Step 5 — Serialisation.** After all threads complete, results are written to per-dataset JSONL files inside a timestamped result directory (`results/YYYYMMDD_HHMMSS_<model>/`). Each line in the JSONL file is a JSON-encoded record containing all raw fields and metadata for one question.
+
+**Step 6 — Correctness evaluation.** `tester.py` is run after data collection. It reads each JSONL file, runs the dataset-specific evaluator (code execution for HumanEval/MBPP, string match for the others), writes `is_correct` and `economic_reward` back into each record, and appends a `dataset_summary` line with the average reward. The evaluator is idempotent and can be re-run at any time to recompute correctness without re-querying the API.
+
+**Step 7 — Optimization strategy execution.** `optimizer.py` reads the stored JSONL records and constructs the optimization scenario outputs (router, cascade, self-consistency) as described in Section 4.9, writing results to `optimization_results/<config_name>/`. These output directories have the same JSONL structure as the standalone result directories, allowing `tester.py` to evaluate them without modification.
+
+**Step 8 — Analysis and visualisation.** `visualize.py` reads all result folders, computes summary statistics, and generates the chart set.
+
+**Failure handling.** If an API call throws an exception, the record is stored with `None` values for all numeric fields and excluded from metric aggregations. Such records are rare (less than 1% of total calls) and do not materially affect results.
+
+---
+
+### 4.11 Fairness and Control
+
+**Same questions across models.** All standalone models in the same run configuration receive the same benchmark questions in the same order. For the optimization strategies, the underlying question pool is drawn from the same datasets and, where applicable, the same stored records.
+
+**Same prompts.** The system prompt is fixed per dataset type and applied identically regardless of which model receives it. No model-specific prompt engineering is applied — no few-shot examples, no chain-of-thought prompting, and no model-specific answer-format adjustments, with the single exception of GPQA (where the prompt asks for the answer text rather than the letter, which applies uniformly to all models).
+
+**Same evaluation criteria.** The evaluator functions in `tester.py` are shared across all models and optimization strategies. A piece of code either passes the test suite or it does not; a multiple-choice letter either matches the correct option or it does not. No subjective rubric is applied.
+
+**Same cost formula.** The economic reward is computed with identical parameters ($\lambda_l = 0.01$, $\lambda_e = 1.0$) for all models and strategies.
+
+**Controlled environment.** All API calls are made from the same machine and network connection. Azure OpenAI and AI Foundry are cloud services — their server-side computational loads are not controlled — but the evaluation runs span multiple days in low-traffic periods to reduce API variability.
+
+**No prompt reuse across runs.** Each model run loads fresh dataset items; results from a previous run do not influence the questions sent to the next model.
+
+**Limitation.** Sample sizes differ across models (50–996 per dataset) due to cost constraints. This introduces a potential selection bias — the smaller samples (50 questions) evaluated for gpt-5.4, gpt-5.4-pro, and the SC subset may not be fully representative of the full dataset difficulty distribution. All comparisons involving these models should be interpreted with this caveat in mind.
+
+---
+
+### 4.12 Analysis Method
+
+**Per-record analysis.** The primary unit of analysis is the individual API response record, containing accuracy, latency, cost, and economic reward. Aggregate statistics are computed from these records.
+
+**Descriptive statistics.** Accuracy is reported as a percentage (number of correct responses divided by total responses × 100). Latency and cost are reported as means across records. Economic reward is reported as a mean across records.
+
+**Macro-average across datasets.** The primary aggregate metric is the macro-average: each of the five datasets contributes equally to the mean, regardless of sample size. This prevents larger datasets (MMLU-Pro at up to 988 questions per model) from dominating smaller ones (HumanEval at 163 questions).
+
+**Comparative tables.** Results are presented in tabular form with models or configurations as rows and metrics as columns, enabling direct side-by-side comparison. Percentage-point (pp) differences are used to quantify accuracy gaps between conditions.
+
+**Economic reward heatmaps.** The ($\lambda_l \times \lambda_e$) parameter grid is swept across values $\lambda_l \in \{0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0\}$ and $\lambda_e \in \{0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0\}$ (approximately a 7×7 grid). For each cell, the model or strategy with the highest mean economic reward is identified. This produces a visual decomposition of which option dominates under different application priorities: the top-left region (low $\lambda_e$, low $\lambda_l$) favours cheap models; the bottom-right (high $\lambda_e$, high $\lambda_l$) isolates accuracy; the diagonal transitions show mixed-preference regions.
+
+**Pareto-style reasoning.** Where numeric comparisons do not yield a clear winner on a single metric, Pareto-style dominance is assessed: a strategy A strictly dominates strategy B if A is better on at least one metric and not worse on any. The economic reward metric serves as a scalar Pareto-reduction tool when single-dimensional comparison is needed.
+
+**Relative improvement.** Percentage-point gains of optimization strategies over their corresponding standalone baselines are reported to quantify the practical benefit of each strategy.
+
+---
+
+### 4.13 Validity and Reliability Considerations
+
+**Measurement consistency.** The Python `time.perf_counter()` latency measurement captures wall-clock time including network round-trip and model generation time. It does not capture time-to-first-token (TTFT) separately, meaning streaming latency is not distinguished from generation latency. This is consistent across all models and therefore does not affect comparisons, but should be noted when comparing against published benchmarks that measure TTFT separately.
+
+**API variance.** Cloud-hosted LLM APIs are non-deterministic services: even at temperature zero, minor variations in server load, batch composition, and infrastructure routing can produce different response times and occasionally different responses across repeated identical calls. To mitigate this, the study does not run analyses requiring exact per-question repeatability; accuracy and cost are analysed at the aggregate level, where individual variance averages out.
+
+**Token counting differences across APIs.** The Chat Completions API reports `prompt_tokens` and `completion_tokens`; the Responses API reports `input_tokens` and `output_tokens`. The two fields are mapped to a common schema in the instrumentation layer, but minor tokenisation differences between the two APIs may cause small discrepancies in cost calculations for models on different endpoints.
+
+**Changing model behaviour over time.** Azure OpenAI model deployments are periodically updated by Microsoft without changing the deployment name. A model queried in week 1 may behave slightly differently from the same deployment name queried in week 4. All evaluations for this study were completed within a contiguous evaluation window to minimise this risk.
+
+**Coverage limitations.** Five benchmarks test a selection of LLM capabilities. Tasks not covered — including open-ended text generation, summarisation, multi-turn dialogue, tool use, and multilingual tasks — may produce different comparative rankings. The conclusions drawn from this study are bounded by the scope of the chosen benchmarks.
+
+**Self-consistency sample size.** The SC evaluation uses only 50 questions per dataset (250 total), compared to up to 988 per dataset in the standalone evaluation. The reduced sample size increases variance in the measured accuracy improvements, and the 50-question subset may not be representative of the full dataset difficulty distribution. SC results should therefore be interpreted as directional rather than definitive.
+
+---
+
+### 4.14 Ethical and Academic Integrity Considerations
+
+All benchmark datasets (HumanEval, MBPP, MMLU-Pro, GPQA, GSM8K) are publicly available research benchmarks with permissive licences or standard academic use agreements. No sensitive, personally identifiable, or confidential data was used in any part of this study.
+
+API costs were incurred on an institutional Azure subscription intended for research purposes. All model responses are stored locally and used solely for academic evaluation; no results were re-published as model outputs or presented as human-generated work.
+
+All numerical results reported in this thesis are derived from actual API call records stored in the results and optimization_results directories. No results are estimated, adjusted post-hoc, or selectively reported. The full dataset of records is available for inspection to support reproducibility.
+
+All external tools, datasets, libraries (HuggingFace `datasets`, OpenAI Python SDK, `matplotlib`, `numpy`, etc.) are properly credited through the project's requirements.txt and the relevant citations in the bibliography. Compacted conversation
+
+Completed: *Write comprehensive methodology chapter* (1/1)
+
+There is the full Chapter 4 — Methodology. Here is a quick summary of what each section covers:
+
+| Section | Content |
+| --- | --- |
+| 4.1 | Research approach (empirical, experimental, quantitative, comparative) |
+| 4.2 | Two-phase study design (standalone baseline → optimization strategies) |
+| 4.3 | All 6 models with endpoint, pricing, API type, and reasoning config |
+| 4.4 | All 5 benchmarks with rationale tied to cloud/Azure contexts |
+| 4.5 | HuggingFace sources, prompt templates per dataset, sample sizes, ordering |
+| 4.6 | All metrics: accuracy, latency, cost, economic reward formula |
+| 4.7 | Full pricing table, cost formula derivation, per-strategy cost accounting |
+| 4.8 | Software instrumentation layer (confidence elicitation, routing, logging) |
+| 4.9 | All 4 experimental scenario families (S1–S4, 20 configs total) |
+| 4.10 | Step-by-step procedure (8 steps from data loading to visualisation) |
+| 4.11 | Fairness controls; acknowledges sample-size limitation |
+| 4.12 | Analysis methods: descriptives, heatmap sweep, Pareto dominance |
+| 4.13 | Validity/reliability: API variance, token-counting differences, coverage limits |
+| 4.14 | Ethics, data licensing, reproducibility commitment |

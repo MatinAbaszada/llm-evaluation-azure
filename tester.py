@@ -2,8 +2,95 @@ import os
 import sys
 import json
 import re
-import threading
+import multiprocessing
+import queue as _queue
 from pathlib import Path
+
+EXEC_TIMEOUT_S = 10  # seconds before code execution is considered hung
+
+
+# ---------------------------------------------------------------------------
+# Subprocess-based code executor  (can actually be killed on timeout)
+# ---------------------------------------------------------------------------
+
+def _worker_main(recv_q: multiprocessing.Queue, send_q: multiprocessing.Queue) -> None:
+    """Runs in a child process. Executes code-piece lists sent via recv_q."""
+    while True:
+        try:
+            job = recv_q.get()
+        except Exception:
+            break
+        if job is None:          # sentinel – clean shutdown
+            break
+        pieces: list = job
+        ns: dict = {}
+        try:
+            for piece in pieces:
+                exec(piece, ns)  # noqa: S102
+            send_q.put(("ok",))
+        except BaseException as exc:
+            send_q.put(("err", type(exc).__name__, str(exc)[:500]))
+
+
+class _CodeExecutor:
+    """Persistent subprocess worker. Killed and restarted automatically on timeout."""
+
+    def __init__(self, timeout: float = EXEC_TIMEOUT_S) -> None:
+        self.timeout = timeout
+        self._ctx = multiprocessing.get_context("spawn")
+        self._proc: "multiprocessing.Process | None" = None
+        self._send: "multiprocessing.Queue | None" = None
+        self._recv: "multiprocessing.Queue | None" = None
+        self._start()
+
+    def _start(self) -> None:
+        self._send = self._ctx.Queue()
+        self._recv = self._ctx.Queue()
+        self._proc = self._ctx.Process(
+            target=_worker_main, args=(self._send, self._recv), daemon=True
+        )
+        self._proc.start()
+
+    def run(self, code_pieces: list) -> None:
+        """Execute pieces in sequence in the worker. Raises on error or timeout."""
+        if self._proc is None or not self._proc.is_alive():
+            self._start()
+        self._send.put(code_pieces)
+        try:
+            result = self._recv.get(timeout=self.timeout)
+        except _queue.Empty:
+            # Worker is hung – kill it and restart for next call
+            self._proc.kill()
+            self._proc.join(2)
+            self._proc = None
+            raise TimeoutError(f"Code execution timed out after {self.timeout}s (infinite loop?)")
+        if result[0] == "err":
+            _, exc_type, exc_msg = result
+            exc_class = {
+                "AssertionError": AssertionError, "NameError": NameError,
+                "TypeError": TypeError, "ValueError": ValueError,
+                "RecursionError": RecursionError, "AttributeError": AttributeError,
+                "IndexError": IndexError, "ZeroDivisionError": ZeroDivisionError,
+            }.get(exc_type, RuntimeError)
+            raise exc_class(exc_msg)
+
+    def shutdown(self) -> None:
+        if self._proc and self._proc.is_alive():
+            try:
+                self._send.put(None)
+                self._proc.join(2)
+            except Exception:
+                self._proc.kill()
+
+
+_EXECUTOR: "_CodeExecutor | None" = None
+
+
+def _get_executor() -> _CodeExecutor:
+    global _EXECUTOR
+    if _EXECUTOR is None:
+        _EXECUTOR = _CodeExecutor()
+    return _EXECUTOR
 
 # ANSI colors
 RED   = "\033[91m"
@@ -104,13 +191,11 @@ def evaluate_humaneval(record: dict) -> tuple[bool, str, "bool | None", str]:
         return False, "Could not find function definition in solution", None, ""
     fn_name = fn_match.group(1)
 
-    namespace: dict = {}
+    executor = _get_executor()
     ai_passed, ai_error = True, ""
     try:
-        exec(code,    namespace)
-        exec(he_test, namespace)
-        # he_test only *defines* check(); we must call it to run the assertions
-        namespace["check"](namespace[fn_name])
+        # exec code + test harness + call check(fn) — all in one subprocess namespace
+        executor.run([code, he_test, f"check({fn_name})"])
     except Exception as exc:
         ai_passed, ai_error = False, _fmt_exc(exc)
 
@@ -118,11 +203,8 @@ def evaluate_humaneval(record: dict) -> tuple[bool, str, "bool | None", str]:
     if not ai_passed:
         he_prompt = record.get("question", "")
         correct   = record.get("correct_answer", "")
-        ref_ns: dict = {}
         try:
-            exec(he_prompt + correct, ref_ns)
-            exec(he_test, ref_ns)
-            ref_ns["check"](ref_ns[fn_name])
+            executor.run([he_prompt + correct, he_test, f"check({fn_name})"])
         except Exception as exc:
             ref_passed, ref_error = False, _fmt_exc(exc)
 
@@ -134,24 +216,20 @@ def evaluate_mbpp(record: dict) -> tuple[bool, str, "bool | None", str]:
     code      = record.get("model_response", "")
     test_list = record.get("test_list", [])
     if not test_list:
-        return True, "No test_list available \u2014 skipped", None, ""
-    namespace: dict = {}
+        return True, "No test_list available — skipped", None, ""
+
+    executor = _get_executor()
     ai_passed, ai_error = True, ""
     try:
-        exec(code, namespace)
-        for assertion in test_list:
-            exec(assertion, namespace)
+        executor.run([code] + test_list)
     except Exception as exc:
         ai_passed, ai_error = False, _fmt_exc(exc)
 
     ref_passed, ref_error = True, ""
     if not ai_passed:
         correct = record.get("correct_answer", "")
-        ref_ns: dict = {}
         try:
-            exec(correct, ref_ns)
-            for assertion in test_list:
-                exec(assertion, ref_ns)
+            executor.run([correct] + test_list)
         except Exception as exc:
             ref_passed, ref_error = False, _fmt_exc(exc)
 
@@ -247,9 +325,13 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
         records = _load_all(folder, stem)
         results_for_ds = []
         if not records:
+            print(f"  [DEBUG] {name}: no records found, skipping", flush=True)
             results_for_ds.append(("skipped", "", None, None, ""))
         else:
-            for record in records:
+            print(f"  [DEBUG] {name}: evaluating {len(records)} records ...", flush=True)
+            for idx, record in enumerate(records):
+                if idx % 50 == 0 and idx > 0:
+                    print(f"  [DEBUG] {name}: {idx}/{len(records)} done", flush=True)
                 passed, detail, ref_passed, ref_error = fn(record)
                 record["is_correct"] = 1 if passed else 0
                 _cost    = record.get("cost_usd", 0.0) or 0.0
@@ -260,6 +342,7 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
                     total_cost += record["cost_usd"]
                 if record.get("elapsed_s") is not None:
                     elapsed_times.append(record["elapsed_s"])
+            print(f"  [DEBUG] {name}: done, writing results ...", flush=True)
             # Write updated records (with is_correct + economic_reward) back to the JSONL file,
             # then append a single summary line with the average economic reward for this dataset.
             ds_rewards_pre = [r["economic_reward"] for r in records]
@@ -339,11 +422,12 @@ def run_all_tests(folder: "Path | None" = None, show_details: bool = False) -> N
     overall_reward_str = f"{total_reward / total_reward_count:.6f}" if total_reward_count > 0 else "n/a"
     p(f"  {WHITE}  Cost:        {cost_str}{RESET}")
     p(f"  {WHITE}  Time:        {time_str}{RESET}")
-    p(f"  {WHITE}  Avg reward:  {overall_reward_str}  (λ_latency={LAMBDA_LATENCY}, λ_error={LAMBDA_ERROR}){RESET}")
+    p(f"  {WHITE}  Avg reward:  {overall_reward_str}  (lam_latency={LAMBDA_LATENCY}, lam_error={LAMBDA_ERROR}){RESET}")
     psep()
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()  # needed for Windows spawn
     show_details = "--details" in sys.argv
     model_folders = find_all_model_folders()
     if not model_folders:
@@ -354,3 +438,12 @@ if __name__ == "__main__":
             print(f"{WHITE}  Showing wrong answer details (--details){RESET}")
         for folder in model_folders.values():
             run_all_tests(folder, show_details=show_details)
+
+    # Also evaluate all optimization results folders
+    opt_dir = Path("optimization_results")
+    if opt_dir.exists():
+        opt_folders = sorted(d for d in opt_dir.iterdir() if d.is_dir())
+        if opt_folders:
+            print(f"\n{BOLD}{WHITE}Evaluating {len(opt_folders)} optimization result folder(s)...{RESET}")
+            for folder in opt_folders:
+                run_all_tests(folder, show_details=False)

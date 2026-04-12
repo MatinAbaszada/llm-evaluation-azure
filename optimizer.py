@@ -656,7 +656,7 @@ def run_selfcons(config_name: str, model: str, n_votes: int = 3) -> None:
 
             return output
 
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        with ThreadPoolExecutor(max_workers=20) as pool:
             output_records = list(pool.map(_run_one, source_records))
 
         _save_jsonl(out_dir, stem, output_records)
