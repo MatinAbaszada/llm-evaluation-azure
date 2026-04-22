@@ -1,0 +1,260 @@
+================================================================================
+CHARTS DESCRIPTION
+================================================================================
+This document describes, in detail, what each chart in the `charts/` folder
+represents. The charts are produced by `visualize.py` and fall into four
+groups:
+
+  • Standalone-model charts (1 – 8)        — single LLMs evaluated on their own
+  • Cascade strategy charts  (C1 – C6)     — small→large escalation pipelines
+  • Router strategy charts   (R1 – R6)     — a router model dispatches queries
+  • Self-consistency charts  (SC1 – SC6)   — N parallel samples + majority vote
+
+Across all charts:
+  • λ_error   = penalty weight applied to incorrect answers in the economic
+                reward function.
+  • λ_latency = penalty weight applied to per-query latency in the economic
+                reward function.
+  • Reward    = accuracy − λ_error · error_rate − λ_latency · avg_latency
+                − cost_per_query (definition used throughout the thesis).
+  • Datasets  = the five evaluation suites (e.g. HumanEval, MMLU, GSM8K,
+                TriviaQA, ARC – exact set defined by `DS_LABELS` in
+                `visualize.py`).
+
+
+================================================================================
+1. STANDALONE-MODEL CHARTS
+================================================================================
+
+--------------------------------------------------------------------------------
+chart1_accuracy.png
+--------------------------------------------------------------------------------
+Bar chart of the **macro-average accuracy** (mean accuracy across all
+datasets) for every standalone model evaluated. One bar per model, sorted to
+make ranking obvious. Used to give a single "headline" accuracy number per
+model before any cost/latency considerations.
+
+--------------------------------------------------------------------------------
+chart2_accuracy_per_dataset.png
+--------------------------------------------------------------------------------
+Grouped bar chart showing **accuracy of each model on each dataset**
+separately. X-axis groups by dataset; within each group there is one bar per
+model. Reveals where individual models excel or underperform (e.g. coding vs.
+reasoning vs. trivia) instead of relying only on the macro average.
+
+--------------------------------------------------------------------------------
+chart3_cost_vs_accuracy.png
+--------------------------------------------------------------------------------
+Scatter plot of **average cost per query (x-axis) vs. macro-avg accuracy
+(y-axis)**, one point per model. Highlights the cost/quality Pareto frontier:
+models on the upper-left dominate (cheaper and more accurate). Useful for
+picking the best price/performance trade-off.
+
+--------------------------------------------------------------------------------
+chart4_reward.png
+--------------------------------------------------------------------------------
+Bar chart of the **macro-average economic reward** per standalone model under
+the default λ_error / λ_latency setting. Combines accuracy, error penalty,
+latency penalty and cost into one comparable score, so models can be ranked
+by overall economic value rather than raw accuracy alone.
+
+--------------------------------------------------------------------------------
+chart5_reward_vs_lambda_error.png
+--------------------------------------------------------------------------------
+Line plot showing how **macro-average reward changes as λ_error is swept**
+across a range (λ_latency held fixed). One line per standalone model.
+Demonstrates how robust each model is when wrong answers are penalised more
+heavily — accurate-but-expensive models tend to dominate as λ_error grows.
+
+--------------------------------------------------------------------------------
+chart6_reward_vs_lambda_latency.png
+--------------------------------------------------------------------------------
+Same idea as chart 5 but **sweeping λ_latency** (with λ_error fixed). One
+line per model. Shows which models stay competitive when latency is
+increasingly penalised — fast small models tend to climb the ranking.
+
+--------------------------------------------------------------------------------
+chart7_best_model_heatmap.png
+--------------------------------------------------------------------------------
+2-D heatmap over the (λ_error, λ_latency) grid. Each cell is **coloured by
+the standalone model that achieves the highest macro-average reward** for
+that particular weighting. Effectively a "decision map": given any choice of
+penalties, which single model should you deploy?
+
+--------------------------------------------------------------------------------
+chart8_best_model_heatmap_per_dataset.png
+--------------------------------------------------------------------------------
+Same idea as chart 7 but split into one subplot **per dataset**. Each subplot
+is a (λ_error, λ_latency) heatmap whose cell colour is the best standalone
+model on that specific dataset. Shows that the optimal model can differ by
+task as well as by penalty configuration.
+
+
+================================================================================
+2. CASCADE CHARTS  (small → large escalation)
+================================================================================
+Cascade configurations are named `cascade__small-X__large-Y__T{60|75|90}`,
+where T is the confidence threshold used to decide whether to escalate a
+query from the small model to the large one.
+
+--------------------------------------------------------------------------------
+chartC1_cascade_combined_overview.png
+--------------------------------------------------------------------------------
+Overview figure combining, per cascade configuration / dataset:
+  • the **escalation rate** (% of queries that the small model could not
+    answer confidently and were forwarded to the large model), and
+  • the **resulting accuracy** of the cascade as a whole.
+Lets you see at a glance how often the expensive model is invoked and what
+that buys in accuracy.
+
+--------------------------------------------------------------------------------
+chartC2_cascade_dual_heatmap.png
+--------------------------------------------------------------------------------
+Two side-by-side heatmaps over cascade configurations:
+  • Left  — **macro-average reward** of each cascade configuration.
+  • Right — **average cost per query** of each cascade configuration.
+Used to compare cascades to each other and to spot configurations that are
+both cheap and high-reward.
+
+--------------------------------------------------------------------------------
+chartC3_cascade_best_config_heatmap.png
+--------------------------------------------------------------------------------
+Decision map over the (λ_error, λ_latency) grid where each cell is coloured
+by **the best option overall — either a cascade configuration OR a
+standalone model**. Answers the question: "When is the cascade actually
+worth it, and which one?"
+
+--------------------------------------------------------------------------------
+chartC4_cascade_reward_vs_lambda_error.png
+--------------------------------------------------------------------------------
+2×2 grid of subplots, one per (small, large) model pair. Each subplot plots
+**reward (or penalty) vs. λ_error** for the three confidence thresholds
+T=60/75/90 of that pair, with the small-only and large-only baselines
+overlaid. Shows how cascade thresholds trade off as error penalties rise.
+
+--------------------------------------------------------------------------------
+chartC5_cascade_reward_vs_lambda_latency.png
+--------------------------------------------------------------------------------
+Same 2×2 layout as C4 but **sweeping λ_latency** instead of λ_error.
+Reveals at which latency penalties cascading still pays off compared with
+running only the small or only the large model.
+
+--------------------------------------------------------------------------------
+chartC6_cascade_per_dataset_decision_map.png
+--------------------------------------------------------------------------------
+Five subplots (one per dataset), each a (λ_error, λ_latency) heatmap whose
+cells are coloured by **the best cascade-or-standalone option on that
+specific dataset**. Per-dataset analogue of chart C3.
+
+
+================================================================================
+3. ROUTER CHARTS  (router decides small vs. large per query)
+================================================================================
+Router configurations are named
+`router__rtr-R__small-S__large-L`, where R is the router model that, for
+each incoming query, picks either the small (S) or large (L) model.
+
+--------------------------------------------------------------------------------
+chartR1_router_overview.png
+--------------------------------------------------------------------------------
+Per-dataset overview combining:
+  • **accuracy** achieved by each router configuration, and
+  • the **routing split** (fraction of queries the router sent to the small
+    model vs. the large one).
+Shows how aggressively each router uses the cheap path and what that costs
+in accuracy.
+
+--------------------------------------------------------------------------------
+chartR2_router_dual_heatmap.png
+--------------------------------------------------------------------------------
+Two side-by-side heatmaps over router configurations:
+  • Left  — **macro-average reward**.
+  • Right — **average cost per query**.
+Standalone small/large models are included for reference so the router can
+be compared with its underlying components.
+
+--------------------------------------------------------------------------------
+chartR3_router_best_config_heatmap.png
+--------------------------------------------------------------------------------
+Decision map over the (λ_error, λ_latency) grid: each cell is coloured by
+**the best option — either a router configuration OR a standalone model**.
+Tells you when a learned router beats just running one model directly.
+
+--------------------------------------------------------------------------------
+chartR4_router_reward_vs_lambda_error.png
+--------------------------------------------------------------------------------
+Reward (or penalty) vs. **λ_error**, with one line per router configuration
+plus baselines for the corresponding small-only and large-only models.
+Shows how routing compares to the two extremes as errors become more costly.
+
+--------------------------------------------------------------------------------
+chartR5_router_reward_vs_lambda_latency.png
+--------------------------------------------------------------------------------
+Same as R4 but sweeping **λ_latency**. Shows how routers behave compared to
+running purely the small or purely the large model when latency penalties
+grow.
+
+--------------------------------------------------------------------------------
+chartR6_router_per_dataset_decision_map.png
+--------------------------------------------------------------------------------
+Five subplots (one per dataset), each a (λ_error, λ_latency) heatmap
+coloured by the best router-or-standalone option on that dataset.
+Per-dataset analogue of chart R3.
+
+
+================================================================================
+4. SELF-CONSISTENCY CHARTS  (N parallel samples + majority vote)
+================================================================================
+Self-consistency configurations are named `selfcons__M__N3`, meaning model M
+is queried N=3 times per question and the final answer is chosen by
+majority vote over the three sampled answers.
+
+--------------------------------------------------------------------------------
+chartSC1_selfcons_overview.png
+--------------------------------------------------------------------------------
+Per-dataset overview combining:
+  • the **accuracy** of the self-consistency ensemble, and
+  • the **vote agreement rate** (how often the N samples already agreed,
+    indicating the model was confident).
+Useful for seeing how often majority voting actually changes an answer and
+what accuracy gain it produces.
+
+--------------------------------------------------------------------------------
+chartSC2_selfcons_dual_heatmap.png
+--------------------------------------------------------------------------------
+Two side-by-side heatmaps comparing self-consistency configurations against
+the standalone single-call versions of the same models:
+  • Left  — **macro-average reward**.
+  • Right — **average cost per query** (which is roughly N× the single-call
+    cost).
+Highlights whether the ~3× cost of self-consistency is justified by reward.
+
+--------------------------------------------------------------------------------
+chartSC3_selfcons_best_config_heatmap.png
+--------------------------------------------------------------------------------
+Decision map over (λ_error, λ_latency) showing **the best option overall —
+either a self-consistency configuration OR a standalone model**. Identifies
+the (typically low-λ_latency, high-λ_error) regions where paying for
+multiple samples is worth it.
+
+--------------------------------------------------------------------------------
+chartSC4_selfcons_reward_vs_lambda_error.png
+--------------------------------------------------------------------------------
+Reward (or penalty) vs. **λ_error**, with one line per self-consistency
+configuration and a baseline line for the same model run as a single call.
+Shows that self-consistency typically becomes preferable as error penalties
+grow large enough to justify the extra latency and cost.
+
+--------------------------------------------------------------------------------
+chartSC6_selfcons_accuracy_comparison.png
+--------------------------------------------------------------------------------
+Grouped bar chart of **accuracy per dataset**, comparing each self-
+consistency configuration to its corresponding standalone (single-call)
+model. Each dataset on the x-axis; bars within a group show
+single-call vs. N=3-vote accuracy. Makes the per-task benefit of voting
+directly visible.
+
+(Note: there is no chartSC5 — λ_latency sweeps are omitted for self-
+consistency because its latency cost is dominated by the fixed N parallel
+calls and is not particularly informative as a sweep.)
+================================================================================
