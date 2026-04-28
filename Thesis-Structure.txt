@@ -84,6 +84,9 @@
 
 # 4. Results
 
+> Reporting only: numerical results, observed behaviour, tables and figures.
+> No interpretation, no RQ answers, no recommendations — those belong in Chapter 5.
+
 ## 4.1 Standalone Model Results
 
 ### 4.1.1 Accuracy and Dataset-Level Performance
@@ -98,17 +101,17 @@
 
 ### 4.2.1 Escalation Behavior and Accuracy
 
-### 4.2.2 Latency, Cost, and Reward Trade-Offs
+### 4.2.2 Latency and Cost Trade-Offs
 
-### 4.2.3 Reward Sensitivity and Decision Regions
+### 4.2.3 Reward at Default Penalties and Best Configuration
 
 ## 4.3 Router Strategy Results
 
 ### 4.3.1 Routing Behavior and Accuracy
 
-### 4.3.2 Latency, Cost, and Reward Trade-Offs
+### 4.3.2 Latency and Cost Trade-Offs
 
-### 4.3.3 Reward Sensitivity and Decision Regions
+### 4.3.3 Reward at Default Penalties and Best Configuration
 
 ## 4.4 Self-Consistency Results
 
@@ -116,40 +119,39 @@
 
 ### 4.4.2 Cost and Latency Effects
 
-### 4.4.3 Reward Sensitivity and Baseline Comparison
+### 4.4.3 Reward at Default Penalties and Comparison to Single-Shot Baseline
 
 ## 4.5 Cross-Scenario Comparative Summary
 
-### 4.5.1 Best Configurations by Scenario
+### 4.5.1 Best Configurations Across Strategies
 
 ### 4.5.2 Main Observed Patterns
 
 # 5. Discussion
 
-## 5.1 Synthesis of the Main Findings
+> Interpretation only: explain *why* the Chapter 4 results look as they do,
+> answer the research questions, and connect to prior literature.
+> Do not restate Chapter 4 numbers beyond what is needed to support a claim.
 
-## 5.2 Answer to Research Question 1: Standalone Model Trade-Offs
+## 5.1 Answer to Research Question 1: Standalone Model Trade-Offs
 
-## 5.3 Answer to Research Question 2: Value of Reasoning-Enabled Models
+## 5.2 Answer to Research Question 2: Value of Reasoning-Enabled Models
 
-## 5.4 Answer to Research Question 3: Value of Proxy-Based Optimization
+## 5.3 Answer to Research Question 3: Value of Proxy-Based Optimization
 
-## 5.5 Relation to Prior Literature
+## 5.4 Relation to Prior Literature
 
-## 5.6 Practical Implications for Azure-Based LLM Deployment
+## 5.5 Practical Implications for Azure-Based LLM Deployment
 
-## 5.7 Contribution of the Study
+## 5.6 Contribution of the Study
 
 # 6. Conclusion, Limitations, and Future Work
 
+> Short, high-level closure only. Do not re-answer the RQs (covered in Ch. 5)
+> and do not re-list the contributions (covered in 5.6).
+
 ## 6.1 Overall Conclusion
 
-## 6.2 Direct Answers to the Research Questions
+## 6.2 Limitations
 
-## 6.3 Main Contributions of the Thesis
-
-## 6.4 Limitations
-
-## 6.5 Future Work
-
-## 6.6 Final Closing Remarks
+## 6.3 Future Work
