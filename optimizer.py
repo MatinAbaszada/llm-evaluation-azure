@@ -249,22 +249,129 @@ def _send_router_decision_request(router_llm_model: str, question: str) -> tuple
 # ---------------------------------------------------------------------------
 # Self-consistency vote helpers
 # ---------------------------------------------------------------------------
+#
+# Two answers are considered "the same vote" when they reduce to the same
+# canonical signature, not when their raw response strings happen to match.
+# Signatures are dataset-specific and mirror the correctness rules used by
+# tester.py:
+#
+#   humaneval, mbpp : pass/fail tuple over the stored test assertions, obtained
+#                     by executing each candidate in a sandboxed subprocess.
+#   mmlu_pro        : first alphabetic character (upper-cased)
+#   gpqa            : full response, lower-cased + whitespace-stripped
+#   gsm8k           : last numeric token in the response
+#
+# The signature-based approach prevents two functionally identical code
+# answers (or two equivalent free-text answers that differ only in case /
+# trailing whitespace) from being counted as a disagreement.
+
+import re as _re
+
+_HE_ASSERT_RE = _re.compile(r"^\s*assert ")
+
+
+def _split_humaneval_asserts(he_test: str) -> list[str]:
+    """Pull individual assert statements out of `def check(candidate): ...`."""
+    asserts: list[str] = []
+    in_check = False
+    for line in he_test.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("def check"):
+            in_check = True
+            continue
+        if in_check and _HE_ASSERT_RE.match(line):
+            asserts.append(stripped)
+    return asserts
+
+
+def _exec_pass_fail(code: str, asserts: list[str]) -> tuple[bool, ...]:
+    """Run each assertion against the candidate; return pass/fail tuple.
+
+    Re-uses tester._get_executor so we share the same sandboxed subprocess
+    pool that the correctness evaluator uses.
+    """
+    from tester import _get_executor  # local import keeps optimizer importable on its own
+    executor = _get_executor()
+    out: list[bool] = []
+    for stmt in asserts:
+        try:
+            executor.run([code, stmt])
+            out.append(True)
+        except Exception:
+            out.append(False)
+    return tuple(out)
+
+
+def _signature(answer: str, stem: str, record: dict):
+    """Return a canonical signature for a single vote response."""
+    if stem == "mmlu_pro":
+        for ch in answer.strip():
+            if ch.isalpha():
+                return ch.upper()
+        return ""
+    if stem == "gpqa":
+        return answer.strip().lower()
+    if stem == "gsm8k":
+        nums = _re.findall(r"[\d,.]+", answer.replace(",", ""))
+        return nums[-1].replace(",", "") if nums else ""
+    if stem == "humaneval":
+        asserts = _split_humaneval_asserts(record.get("he_test", ""))
+        if not asserts:
+            return answer  # fall back to raw string
+        fn_match = _re.search(r"def (\w+)\s*\(", answer)
+        if not fn_match:
+            return ("__no_def__",)
+        fn_name = fn_match.group(1)
+        rewritten = [a.replace("candidate", fn_name) for a in asserts]
+        return _exec_pass_fail(answer, rewritten)
+    if stem == "mbpp":
+        test_list = record.get("test_list") or []
+        if not test_list:
+            return answer
+        return _exec_pass_fail(answer, list(test_list))
+    return answer
+
+
+def _vote_by_signature(answers: list[str], stem: str, record: dict) -> tuple[str, list, bool]:
+    """Behavioural-equivalence majority vote.
+
+    Returns (winner_response, signatures_per_vote, all_agree_bool).
+    The winner is the first response in the largest signature cluster, with
+    ties broken by submission order.
+    """
+    if not answers:
+        return "", [], False
+    sigs = [_signature(a, stem, record) for a in answers]
+    counter = Counter(repr(s) for s in sigs)
+    top_repr, _ = counter.most_common(1)[0]
+    for ans, sig in zip(answers, sigs):
+        if repr(sig) == top_repr:
+            winner = ans
+            break
+    all_agree = len(set(repr(s) for s in sigs)) == 1
+    return winner, sigs, all_agree
+
+
+# Backwards-compatible thin wrappers (callers that don't have dataset/record
+# context still get a sensible majority vote based on raw string equality).
 
 def _majority_vote_text(answers: list[str]) -> str:
-    """Return most common non-empty answer; fall back to first if all unique."""
     clean = [a.strip() for a in answers if a.strip()]
     if not clean:
         return answers[0] if answers else ""
     counter = Counter(clean)
     winner, count = counter.most_common(1)[0]
     if count == 1:
-        # All unique — fall back to first answer
         return clean[0]
     return winner
 
 
 def _majority_vote_code(answers: list[str]) -> str:
-    """For code tasks: return first answer that has no syntax error; else first."""
+    """Syntax-only fallback for callers without dataset context.
+
+    Real self-consistency runs go through ``_vote_by_signature`` instead and
+    pick the winner by behavioural equivalence on the stored test cases.
+    """
     import ast
     for code in answers:
         try:
@@ -563,10 +670,14 @@ _STEM_TO_SYSTEM: dict[str, str] = {
 _CODE_STEMS = {"humaneval", "mbpp"}
 
 
-def _selfcons_vote(answers: list[str], is_code: bool) -> str:
-    if is_code:
-        return _majority_vote_code(answers)
-    return _majority_vote_text(answers)
+def _selfcons_vote(answers: list[str], stem: str, record: dict) -> tuple[str, list, bool]:
+    """Returns (winner, per-vote signatures, all_agree).
+
+    Always uses behavioural-equivalence signatures (see ``_signature``); the
+    legacy ``_majority_vote_text`` / ``_majority_vote_code`` helpers are kept
+    only for callers that don't have a dataset/record in scope.
+    """
+    return _vote_by_signature(answers, stem, record)
 
 
 def run_selfcons(config_name: str, model: str, n_votes: int = 3) -> None:
@@ -615,7 +726,7 @@ def run_selfcons(config_name: str, model: str, n_votes: int = 3) -> None:
                 votes = list(inner.map(_single_vote, range(n_votes)))
 
             answers  = [v["answer"] for v in votes]
-            winner   = _selfcons_vote(answers, _is_code)
+            winner, sigs, all_agree = _selfcons_vote(answers, _stem, rec)
 
             # Combined cost = sum; elapsed = max (parallel execution)
             total_cost    = sum(v["cost_usd"]  for v in votes)
@@ -648,6 +759,8 @@ def run_selfcons(config_name: str, model: str, n_votes: int = 3) -> None:
                 "finish_reason":      votes[-1]["finish_reason"],
                 "vote_responses":     answers,
                 "vote_winner":        winner,
+                "vote_signatures":    [repr(s) for s in sigs],
+                "vote_agreement":     bool(all_agree),
                 "n_votes":            n_votes,
             })
 

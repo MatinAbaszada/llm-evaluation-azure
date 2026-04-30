@@ -1640,7 +1640,11 @@ def _load_selfcons_data() -> dict:
             lats   = [r.get("elapsed_s",  0.0) or 0.0 for r in records]
             rews   = [r.get("economic_reward") for r in records]
             agrees = [
-                int(len(set(r.get("vote_responses") or [])) == 1)
+                int(
+                    r["vote_agreement"]
+                    if isinstance(r.get("vote_agreement"), bool)
+                    else len(set(r.get("vote_responses") or [])) == 1
+                )
                 for r in records
             ]
             ds_acc[stem]  = 100.0 * sum(accs)  / n_stem
@@ -1736,9 +1740,18 @@ def chart_sc1_selfcons_overview(sc_data: dict, model_folders: dict):
         # Right axis: agreement rate bars
         ax_r.bar(xi, agrs, width=0.45, color=bar_color, alpha=0.30,
                  zorder=2, label="Agreement rate %")
-        for xv, agr in zip(xi, agrs):
-            ax_r.text(xv, agr + 1.5, f"{agr:.0f}%", ha="center",
-                      fontsize=8, color="#888888")
+        # For HumanEval and MBPP the bars are tall enough that a label above
+        # them collides with the SC accuracy line; place those labels just
+        # above the column base instead. All other datasets keep the
+        # default "above the bar" placement.
+        _bottom_label_stems = {"humaneval", "mbpp"}
+        for xv, agr, stem in zip(xi, agrs, stems):
+            if stem in _bottom_label_stems:
+                ax_r.text(xv, 3, f"{agr:.0f}%", ha="center", va="bottom",
+                          fontsize=8, color="#666666")
+            else:
+                ax_r.text(xv, agr + 1.5, f"{agr:.0f}%", ha="center",
+                          fontsize=8, color="#888888")
         ax_r.set_ylabel("Vote Agreement Rate (%)", color="#888888", fontsize=9)
         ax_r.tick_params(axis="y", labelcolor="#888888")
         ax_r.set_ylim(0, 140)
