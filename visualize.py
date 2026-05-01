@@ -767,41 +767,75 @@ def _load_cascade_data() -> dict:
         if parsed is None:
             continue
         small, large, threshold = parsed
-        n_total = n_esc = n_corr = n_with = 0
-        n_esc_corr = n_esc_with = n_kept_corr = n_kept_with = 0
-        cost_sum = reward_sum = reward_with = 0.0
+        n_total = n_esc = 0
+        # Per-dataset accumulators so accuracy/cost/reward can all be
+        # macro-averaged across the five benchmarks (Chapter 3.3.1 / 3.3.4).
+        ds_acc_means: list[float] = []
+        ds_kept_acc_means: list[float] = []
+        ds_esc_acc_means: list[float] = []
+        ds_cost_means: list[float] = []
+        ds_reward_means: list[float] = []
         for stem in DATASETS:
-            for rec in _load_records(folder, stem):
-                n_total  += 1
-                cost_sum += rec.get("cost_usd") or 0.0
-                is_esc    = bool(rec.get("escalated", False))
+            recs_stem = _load_records(folder, stem)
+            if not recs_stem:
+                continue
+            ds_n = ds_corr = ds_with = 0
+            ds_kept_n = ds_kept_corr = 0
+            ds_esc_n = ds_esc_corr = 0
+            ds_cost_sum = 0.0
+            ds_cost_n = 0
+            ds_reward_sum = 0.0
+            ds_reward_n = 0
+            for rec in recs_stem:
+                ds_n += 1
+                c = rec.get("cost_usd")
+                if c is not None:
+                    ds_cost_sum += float(c)
+                    ds_cost_n += 1
+                is_esc = bool(rec.get("escalated", False))
                 if is_esc:
-                    n_esc += 1
+                    ds_esc_n += 1
                 ic = rec.get("is_correct")
                 if ic is not None:
-                    n_with += 1
-                    n_corr += ic
+                    ds_with += 1
+                    ds_corr += ic
                     if is_esc:
-                        n_esc_with  += 1
-                        n_esc_corr  += ic
+                        ds_esc_corr += ic
                     else:
-                        n_kept_with += 1
-                        n_kept_corr += ic
+                        ds_kept_n += 1
+                        ds_kept_corr += ic
                 er = rec.get("economic_reward")
                 if er is not None:
-                    reward_sum  += float(er)
-                    reward_with += 1
+                    ds_reward_sum += float(er)
+                    ds_reward_n += 1
+            n_total += ds_n
+            n_esc   += ds_esc_n
+            if ds_with:
+                ds_acc_means.append(100.0 * ds_corr / ds_with)
+            if ds_kept_n:
+                ds_kept_acc_means.append(100.0 * ds_kept_corr / ds_kept_n)
+            if ds_esc_n:
+                ds_esc_acc_means.append(100.0 * ds_esc_corr / ds_esc_n)
+            if ds_cost_n:
+                ds_cost_means.append(ds_cost_sum / ds_cost_n)
+            if ds_reward_n:
+                ds_reward_means.append(ds_reward_sum / ds_reward_n)
         if n_total == 0:
             continue
         data[(small, large, threshold)] = {
             "n_total":        n_total,
             "n_escalated":    n_esc,
             "escalation_pct": 100.0 * n_esc / n_total,
-            "avg_cost":       cost_sum / n_total,
-            "macro_accuracy": (100.0 * n_corr / n_with)           if n_with      else None,
-            "acc_escalated":  (100.0 * n_esc_corr / n_esc_with)   if n_esc_with  else None,
-            "acc_kept":       (100.0 * n_kept_corr / n_kept_with)  if n_kept_with else None,
-            "avg_reward":     (reward_sum / reward_with)           if reward_with else None,
+            "avg_cost":       (sum(ds_cost_means) / len(ds_cost_means))
+                              if ds_cost_means else None,
+            "macro_accuracy": (sum(ds_acc_means) / len(ds_acc_means))
+                              if ds_acc_means else None,
+            "acc_escalated":  (sum(ds_esc_acc_means) / len(ds_esc_acc_means))
+                              if ds_esc_acc_means else None,
+            "acc_kept":       (sum(ds_kept_acc_means) / len(ds_kept_acc_means))
+                              if ds_kept_acc_means else None,
+            "avg_reward":     (sum(ds_reward_means) / len(ds_reward_means))
+                              if ds_reward_means else None,
         }
     return data
 
