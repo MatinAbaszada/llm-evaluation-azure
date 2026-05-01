@@ -284,23 +284,22 @@ The cross-strategy decision map below places the four router configurations and 
 4.4 Self-Consistency Results
 ================================================================================
 
-The self-consistency strategy specified in Section 3.4.4 was instantiated with N=3 for two configurations: gpt-4.1-mini and gpt-5.4-mini. Because each vote requires an independent decoding pass, the standalone JSONL records cannot be reused, and the runs were executed on a stratified subset of 50 questions per dataset (250 in total).
-
+The self-consistency strategy specified in Section 3.4.4 was instantiated with N=3 for both gpt-4.1-mini and gpt-5.4-mini. 
 
 --------------------------------------------------------------------------------
 4.4.1 Accuracy Gains and Vote Agreement
 --------------------------------------------------------------------------------
 
-The diagnostic metric specific to self-consistency is the agreement rate, defined as the fraction of inputs for which all three votes resolve to the same canonical answer under the dataset-specific equivalence rules of Section 3.3.1 (parsed letter for MMLU-Pro, normalized text for GPQA, final number for GSM8K, and behavioural equivalence on the stored test harness for HumanEval and MBPP). The table below reports the agreement rate per configuration and per dataset.
+The self-consistency method has a specific vote agreement rate metric, calculated as the percentage of inputs where all three votes converge to the same canonical answer. The items used to determine equivalence are defined by the dataset-specific rules in Section 3.3.1.  Specifically, parsed letters used for MMLU-Pro, text normalization used for GPQA, canonical final answer used for GSM8K, and behavioral equivalence on the stored test harness used for HumanEval and MBPP. The table below visualizes the agreement rate for each self-consistency configuration and dataset.
 
   Configuration         | Overall | HumanEval | MBPP  | MMLU-Pro | GPQA  | GSM8K
   ----------------------+---------+-----------+-------+----------+-------+-------
   gpt-4.1-mini  N=3     |  78.8%  |   94.0%   | 88.0% |  74.0%   | 76.0% | 62.0%
   gpt-5.4-mini  N=3     |  70.0%  |   92.0%   | 90.0% |  56.0%   | 58.0% | 54.0%
 
-Agreement is highest on the two coding benchmarks, between 88% and 94%: once functional equivalence is taken into account, the small models produce behaviourally identical solutions across the three samples on the overwhelming majority of HumanEval and MBPP problems, even though the surface form of the code (variable names, formatting, helper-function placement) differs across votes. The multiple-choice benchmarks sit in the middle (56–76%), with the model converging on the same option more often than not, and GSM8K is the lowest of the five (54–62%) because numeric chains-of-thought occasionally end on different totals across samples. The two configurations are also separated at the overall level: gpt-4.1-mini agrees with itself on 78.8% of inputs, against 70.0% for gpt-5.4-mini.
+Agreement is highest on the two coding benchmarks, between 88% and 94%. Even though the coding results of HumanEval and MBPP differ in variable names and formatting across the three samples, small models produce identical solutions for most of them. With agreement rates of around 56% and 76%, the multiple-choice benchmarks fall in the middle tier. GSM8K is the lowest of the five (54–62%) because numerical reasoning chains can sometimes lead to divergent calculation outcomes. The two configurations are also separated at the overall level: gpt-4.1-mini agrees with itself on 78.8% of inputs, against 70.0% for gpt-5.4-mini.
 
-The accuracy outcomes for the same configurations are reported in the following table, alongside the standalone single-call baseline of the same model from Section 4.1.1 measured on the corresponding subset.
+The following table presents the accuracy results for the same configurations, alongside the single-call accuracy result for the same model (reported in section 4.1.1).
 
   Dataset    | gpt-4.1-mini | SC 4.1-mini | Delta   | gpt-5.4-mini | SC 5.4-mini | Delta
   -----------+--------------+-------------+---------+--------------+-------------+--------
@@ -313,32 +312,32 @@ The accuracy outcomes for the same configurations are reported in the following 
 
 [chartSC1_selfcons_overview.png]
 
-Both configurations improve at the macro level, by 6.8 pp for gpt-4.1-mini and by 2.6 pp for gpt-5.4-mini, and the gain is concentrated on the two hardest multiple-choice benchmarks. For gpt-4.1-mini the largest movement is on MMLU-Pro, from 27.8% to 44.0%, where the standalone score is close to the random baseline of a 10-option task and the majority vote disambiguates between recurring candidate answers. The same dataset yields only +2.4 pp for gpt-5.4-mini, because its standalone score of 41.6% already lies above the same plateau. The coding benchmarks gain only marginally (+2.6 to +3.7 pp on HumanEval, near zero on MBPP) for a different reason: the behavioural agreement rates of 88–94% reported above mean that the small models almost always produce three behaviourally identical solutions, so the majority vote has nothing to choose between and inherits the accuracy of any single sample. GSM8K is essentially unchanged for both configurations: where the underlying model misexecutes an arithmetic step, it tends to repeat the same misexecution across all three samples rather than vary at random, so voting cannot recover the answer.
+Both configurations raised accuracy at the macro level, with gains of 6.8 pp from gpt-4.1-mini and 2.6 pp from gpt-5.4-mini. These gains are primarily observed on the two most challenging multiple-choice benchmarks. The most substantial improvement for gpt-4.1-mini is observed on MMLU-Pro, with performance increasing from 27.8% to 44.0%. Sampling multiple times and selecting the majority vote address the kinds of random behavior in the standalone model. Since the separate model's performance on the same dataset has already reached a plateau at 41.6%, it contributes only an additional 2.4 percentage points to gpt-5.4-min. The coding benchmarks gain only marginally (+2.6 to +3.7 pp on HumanEval, near zero on MBPP) for a different reason: the behavioral agreement rates of 88–94% reported above mean that the small models almost always produce three behaviorally identical solutions, so the majority vote has nothing to choose between and inherits the accuracy of any single sample. Results on the GSM8K evaluation stay the same across both configurations. This is directly related to the model itself, because when the underlying model makes an arithmetic error, it usually continues to make the same mistake across all three samples, which prevents the voting mechanism from correcting the answer.
 
-Despite the macro-level gain, neither configuration crosses the next standalone tier. The best self-consistency macro accuracy of 64.4%, achieved by gpt-4.1-mini N=3, sits 3.9 pp below the gpt-4.1 standalone baseline of 68.3% and far below the gpt-5.4 standalone baseline (90.8%). The voting ensemble narrows the gap to the next model up but does not close it.
+Although there is an improvement at the macro level, neither configuration surpasses the subsequent standalone tier. The highest self-consistency macro accuracy, 64.4%, achieved by gpt-4.1-mini N=3, remains 3.9 percentage points below the gpt-4.1 standalone baseline of 68.3% and significantly below the gpt-5.4 standalone baseline of 90.8%. The voting ensemble reduces the performance gap to the next model but does not eliminate it.
 
 
 --------------------------------------------------------------------------------
 4.4.2 Cost and Latency Effects
 --------------------------------------------------------------------------------
 
-Cost scales close to linearly with the number of votes. The table below reports the macro-average per-request cost and compares it to the standalone single-call cost of the same model on the same subset.
+Cost scales close to linearly with the number of votes. The table below reports the macro-average per-request cost and compares it to the standalone single-call cost of the same model.
 
   Configuration         | SC cost (m$) | Standalone (m$) | Multiplier
   ----------------------+--------------+-----------------+------------
   gpt-4.1-mini  N=3     |    0.317     |      0.255      |   1.24x
   gpt-5.4-mini  N=3     |    0.310     |      0.138      |   2.24x
 
-The multipliers fall short of the nominal 3x because the standalone subset average includes per-request overhead that does not multiply with sampling, and because the prompts dispatched in the self-consistency runs are slightly shorter than the average over the full standalone evaluation set. GPQA remains the most expensive dataset within self-consistency as well (0.383 m$ for the gpt-4.1-mini configuration and 0.304 m$ for the gpt-5.4-mini configuration), consistent with the per-dataset cost ranking already reported in Section 4.1.3.
+The actual multiplier is lower than the nominal 3x because the per-request overhead included in the average over the standalone runs does not scale with sampling, and because the prompts dispatched in the self-consistency runs are somewhat shorter on average than those in the standalone evaluation. GPQA remains the most expensive dataset within self-consistency as well (0.383 m$ for the gpt-4.1-mini configuration and 0.304 m$ for the gpt-5.4-mini configuration), consistent with the per-dataset cost ranking already reported in Section 4.1.3.
 
 Latency behaves differently from cost. The N=3 calls are dispatched in parallel through a thread pool, and the recorded wall-clock latency is the time from dispatch to the last response received, which is approximately the maximum of the three individual call latencies rather than their sum. The table below reports the resulting macro-average latency.
 
-  Configuration         | SC latency (s) | Standalone subset (s)
+  Configuration         | SC latency (s) | Standalone (s)
   ----------------------+----------------+-----------------------
   gpt-4.1-mini  N=3     |      2.03      |          1.81
   gpt-5.4-mini  N=3     |      1.76      |          1.65
 
-The self-consistency runs are slightly slower than a single call to the same model on the same subset (the maximum of three samples is in expectation higher than any single one), but the difference is small. The absolute latency values are well below those reported in Section 4.1.2 for the full standalone evaluation, because the subset excludes the long-tail throttled requests that dominate the full-set means.
+The self-consistency runs are slightly slower than a single call to the same model, as the expected maximum of three samples exceeds that of a single sample, but the difference is small. The recorded latencies are markedly lower than those reported in Section 4.1.2 because the self-consistency runs were executed in a window in which the deployments did not exhibit the throttled long-tail behaviour that dominates the means of the full standalone evaluation.
 
 The dual heatmap below summarizes both dimensions for the two configurations.
 
@@ -349,22 +348,22 @@ The dual heatmap below summarizes both dimensions for the two configurations.
 4.4.3 Reward at Default Penalties and Comparison to Single-Shot Baseline
 --------------------------------------------------------------------------------
 
-Computing the economic reward of Section 3.3.4 at the default weights lambda_l = 0.01, lambda_e = 1.0 yields the following values.
+After computing the economic reward of Section 3.3.4 at the default weights, lambda_l = 0.01, lambda_e = 1.0, the following values are yielded.
 
-  Configuration         | SC reward | Standalone (subset) | Delta
+  Configuration         | SC reward | Standalone | Delta
   ----------------------+-----------+---------------------+--------
   gpt-4.1-mini  N=3     |  -0.377   |       -0.443        | +0.066
   gpt-5.4-mini  N=3     |  -0.386   |       -0.411        | +0.025
 
-Both configurations improve the reward of their underlying single-call baseline on the same subset. The improvement comes almost entirely from the accuracy gain documented in Section 4.4.1; the latency penalty term changes by less than 0.003 reward units between the single-call and the N=3 configurations, and the cost term contributes a comparable order of magnitude. The gpt-4.1-mini configuration moves by 0.066 reward units against 0.025 for gpt-5.4-mini, mirroring the larger accuracy gain.
+Both configurations improve the reward of their underlying single-call baseline. The improvement comes almost entirely from the accuracy gain documented in Section 4.4.1. Between the single-cal and N = 3 configurations, the latency penalty changes less than 0.003 reward units, and the contribution of the cost term is of a similar magnitude. gpt-4.1-mini exhibits a larger increase in accuracy, 0.066 reward units, compared to gpt-5.4-mini, which advances by 0.025 reward units.
 
-The two figures below show the sensitivity of the self-consistency reward to the penalty weights. The error sweep includes the corresponding single-call baselines as reference lines. The latency sweep is omitted by design (cf. the chart description in chapter 3): because the N=3 calls run in parallel, the latency of the configuration is bounded by the slowest single sample, and the curve as a function of lambda_l is essentially identical to that of a single call.
+The two figures below show the sensitivity of the self-consistency reward to the penalty weights. The error sweep includes the corresponding single-call baselines as reference lines. The latency sweep is omitted by design (cf. the chart description in chapter 3): since the N = 3 calls are in parallel, the latency of the configuration is bound by a single slowest sample and therefore the resulting curve, as a function of lambda_l, is very nearly identical to the curve of a single call.
 
 [chartSC4_selfcons_reward_vs_lambda_error.png]
 
 [chartSC6_selfcons_accuracy_comparison.png]
 
-The cross-strategy decision map below colors every cell of the (lambda_e, lambda_l) grid by the best option overall, where the candidate set includes the two self-consistency configurations and the six standalone models. No self-consistency cell appears on the macro grid: the standalone models, evaluated on the full benchmark, dominate the comparison at every penalty setting. The per-dataset version yields the same outcome.
+The cross-strategy decision map below colors every cell of the (lambda_e, lambda_l) grid by the best option overall. The candidate set includes the two self-consistency configurations and the six standalone models. Since standalone models always show better performance than the self-consistency method, there is no self-consistency cell in the map. The per-dataset version yields the same outcome.
 
 [chartSC3_selfcons_best_config_heatmap.png]
 
@@ -373,23 +372,21 @@ The cross-strategy decision map below colors every cell of the (lambda_e, lambda
 4.5 Cross-Scenario Comparative Summary
 ================================================================================
 
-This section consolidates the per-strategy results of Sections 4.1 to 4.4 onto a single comparison grid, restating only the figures needed to substantiate the cross-strategy ordering. No new metric is introduced.
-
-
 --------------------------------------------------------------------------------
 4.5.1 Best Configurations Across Strategies
 --------------------------------------------------------------------------------
 
-The table below lists, for each strategy, the configuration with the highest macro-average reward at the default weights lambda_l = 0.01 and lambda_e = 1.0, together with its accuracy, latency, and cost.
+The following table displays the best-performing model for each strategy, along with the corresponding accuracy, latency, and cost. Model selection is based on the macro-average reward computed under the default weights λ l = 0.01 and λ e = 1.
 
   Strategy          | Best configuration                          | Accuracy | Latency | Cost (m$) | Reward
   ------------------+---------------------------------------------+----------+---------+-----------+--------
   Standalone        | gpt-5.4                                     |  90.8%   |  34.7s  |   5.370   | -0.444
   Router            | rtr=gpt-5.4-mini, gpt-4.1-mini -> gpt-4.1   |  73.1%   |  22.9s  |   0.344   | -0.498
   Cascade           | gpt-4.1-mini -> gpt-5.4, T=75               |  57.6%   |  17.7s  |   0.250   | -0.601
-  Self-consistency  | gpt-4.1-mini, N=3 (subset)                  |  64.4%   |   2.0s  |   0.317   | -0.377
+  Self-consistency  | gpt-4.1-mini, N=3                           |  64.4%   |   2.0s  |   0.317   | -0.377
 
-The standalone gpt-5.4 baseline remains the best macro reward when all four strategies are placed on the same full-benchmark evaluation. The router configuration is the only optimization strategy whose macro reward is competitive on the full set: it sits 0.054 reward units behind gpt-5.4 while spending roughly 16x less per request. The cascade winner is dominated on the full set by the standalone of its own small model (gpt-4.1-mini, -0.582). The self-consistency winner reports a higher reward number, but the figure is computed on the 250-question subset described in Section 4.4 and is not directly comparable to the full-benchmark numbers in the rows above; on the same subset, the self-consistency reward exceeds the corresponding single-call baseline by 0.066 reward units.
+WTFF???
+The standalone gpt-5.4 baseline remains the best macro reward when all four strategies are placed on the same comparison. The router configuration is the only optimization strategy whose macro reward is competitive: it sits 0.054 reward units behind gpt-5.4 while spending roughly 16x less per request. The cascade winner is dominated by the standalone of its own small model (gpt-4.1-mini, -0.582). The self-consistency winner reports a higher reward number than any standalone or router entry in the table, and on the same evaluation it exceeds the corresponding single-call baseline by 0.066 reward units; the recorded latency, however, is well below that of the full standalone runs in Section 4.1.2 because the self-consistency runs did not encounter the throttled long-tail behaviour that dominates the standalone means, so the absolute reward number should be read together with the latency caveat in Section 4.4.2 rather than as a strict like-for-like comparison.
 
 
 --------------------------------------------------------------------------------
@@ -398,11 +395,12 @@ The standalone gpt-5.4 baseline remains the best macro reward when all four stra
 
 Three patterns are visible across the four strategies.
 
-First, the effective lever in the optimization strategies is which inputs the strategy actually escalates, not how the escalation gate is parameterized. The cascade thresholds T in {60, 75, 90} produced macro escalation rates that never exceeded 7.3% (Section 4.2.1), and the resulting accuracy and reward varied by less than 0.5 pp and 0.03 reward units within any pairing. By contrast, the router models escalated between 11% and 26% of the inputs and were the only configurations to move accuracy by more than 1 pp from the small-model baseline (up to +16.4 pp, Section 4.3.1). Self-consistency does not escalate at all, but its multiplicative cost behaves like a uniform escalation applied to every input, and its accuracy gain (up to +6.8 pp on the subset, Section 4.4.1) is bounded by the small model's residual sample-to-sample variance.
+WTFF???
+First, the effective lever in the optimization strategies is whether the system escalates the right inputs, not the threshold values used for escalation. Even though three different cascade thresholds were used, the produced macro escalation rates never exceeded 7.3% (Section 4.2.1), and the resulting accuracy and reward varied by less than 0.5 pp and 0.03 reward units within any pairing. By contrast, the router models escalated between 11% and 26% of the inputs and were the only configurations to move accuracy by more than 1 pp from the small-model baseline (up to +16.4 pp, Section 4.3.1). While there are no conditional escalations in self-consistency, the multiplicative cost still serves as a uniform escalation for all inputs. The resulting accuracy gain (up to +6.8 pp, Section 4.4.1) is limited by the residual sample-to-sample variance of the small model. 
 
-Second, the relative ranking of the strategies is dominated by which model actually produces the answer. The cascade winner inherits the accuracy of its small model almost unchanged, because the gate rarely opens. The two gpt-5.4-mini-based router configurations beat their gpt-4.1-mini-based counterparts on accuracy by 13 to 17 percentage points, but the gpt-4.1-mini-based router with gpt-5.4-mini as the classifier is the highest-reward router because the cost of escalating to gpt-5.4 (5.370 m$ per call standalone, 14.808 m$ on GPQA) erodes the reward more than the additional accuracy compensates. Self-consistency improves the accuracy of its underlying model but cannot reach the next standalone tier, reaching 64.4% against 68.3% for gpt-4.1.
+Second, the performance of the strategies is dominated by which model actually produces the answer. Because the gate rarely opens, the accuracy of winning cases in the cascade strategy is almost the same as the small model's accuracy. The two gpt-5.4-mini-based router configurations beat their gpt-4.1-mini-based counterparts on accuracy by 13 to 17 percentage points, but the gpt-4.1-mini-based router with gpt-5.4-mini as the classifier is the highest-reward router because the cost of escalating to gpt-5.4 (5.370 m$ per call standalone, 14.808 m$ on GPQA) erodes the reward more than the additional accuracy compensates. Self-consistency improves the accuracy of its underlying model but cannot reach the next standalone tier, achieving 64.4% accuracy compared to 68.3% for gpt-4.1.
 
-Third, only one optimization configuration in the study wins any cell of the cross-strategy macro decision map: the rtr=gpt-5.4-mini, gpt-4.1-mini -> gpt-4.1 router, which holds a diagonal band between the gpt-4.1-mini region (high lambda_l, low lambda_e) and the gpt-5.4 region (low lambda_l, high lambda_e). Every cascade configuration and every self-consistency configuration is dominated by a standalone model at every penalty setting on the macro grid. The per-dataset decision maps reproduce the same ordering on every benchmark.
+Third, only one optimization configuration in the study wins any cell of the cross-strategy macro decision map: the rtr=gpt-5.4-mini, gpt-4.1-mini -> gpt-4.1 router, which holds a diagonal band between the gpt-4.1-mini region (high lambda_l, low lambda_e) and the gpt-5.4 region (low lambda_l, high lambda_e). Every cascade configuration and every self-consistency configuration is dominated by a standalone model at every penalty setting on the macro grid. The decision maps demonstrate the same order of strategies across all evaluated datasets.
 
 [chartR3_router_best_config_heatmap.png]
 
