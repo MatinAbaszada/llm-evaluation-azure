@@ -2957,7 +2957,7 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
         np.linspace(0.01,   0.1,   100),
         np.linspace(0.1,    0.5,   100),
         np.linspace(0.5,    1.0,    60),
-        np.linspace(1.0,    10.0,   60),
+        np.linspace(1.0,    4.0,    80),
     ]))
 
     router_color = "#1B4F72"
@@ -2982,6 +2982,7 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
         rtr_recs   = {stem: _load_records(rtr_folder, stem) for stem in DATASETS}
 
         rtr_raw = []
+        rtr_lam = []
         for lam_l in lambda_lats:
             ds_avgs = []
             for stem in DATASETS:
@@ -2994,9 +2995,13 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
                                        LAMBDA_ERROR_DEFAULT, lam_l)
                         for r in records]
                 ds_avgs.append(sum(rews) / len(rews))
-            rtr_raw.append(-(sum(ds_avgs) / len(ds_avgs)) if ds_avgs else 0.0)
+            val = -(sum(ds_avgs) / len(ds_avgs)) if ds_avgs else 0.0
+            rtr_raw.append(val)
+            rtr_lam.append(lam_l)
+            if val >= max(ytick_vals):
+                break
 
-        ax.plot(lambda_lats, [to_pos(max(0.0, v)) for v in rtr_raw],
+        ax.plot(rtr_lam, [to_pos(max(0.0, v)) for v in rtr_raw],
                 color=router_color, lw=2.2, linestyle="-",
                 label=f"Router (via {rtr})")
 
@@ -3009,6 +3014,7 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
                 continue
             base_recs = {stem: _load_records(base_folder, stem) for stem in DATASETS}
             base_raw = []
+            base_lam = []
             for lam_l in lambda_lats:
                 ds_avgs = []
                 for stem in DATASETS:
@@ -3021,8 +3027,12 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
                                            LAMBDA_ERROR_DEFAULT, lam_l)
                             for r in records]
                     ds_avgs.append(sum(rews) / len(rews))
-                base_raw.append(-(sum(ds_avgs) / len(ds_avgs)) if ds_avgs else 0.0)
-            ax.plot(lambda_lats, [to_pos(max(0.0, v)) for v in base_raw],
+                val = -(sum(ds_avgs) / len(ds_avgs)) if ds_avgs else 0.0
+                base_raw.append(val)
+                base_lam.append(lam_l)
+                if val >= max(ytick_vals):
+                    break
+            ax.plot(base_lam, [to_pos(max(0.0, v)) for v in base_raw],
                     color=color, lw=1.8, linestyle=ls, label=label)
 
         ax.axvline(LAMBDA_LATENCY_DEFAULT, color="gray", linestyle=":", lw=1,
