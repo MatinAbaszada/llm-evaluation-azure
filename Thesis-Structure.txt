@@ -133,17 +133,17 @@
 > answer the research questions, and connect to prior literature.
 > Do not restate Chapter 4 numbers beyond what is needed to support a claim.
 
-## 5.1 Answer to Research Question 1: Standalone Model Trade-Offs
+## 5.1 Trade-Offs among Standalone Models
 
-## 5.2 Answer to Research Question 2: Value of Reasoning-Enabled Models
+## 5.2 The Case for Reasoning-Enabled Inference
 
-## 5.3 Answer to Research Question 3: Value of Proxy-Based Optimization
+## 5.3 Effectiveness of Proxy-Based Optimization
 
 ## 5.4 Relation to Prior Literature
 
-## 5.5 Practical Implications for Azure-Based LLM Deployment
+## 5.5 Implications for Azure Deployment
 
-## 5.6 Contribution of the Study
+## 5.6 Contributions
 
 # 6. Conclusion, Limitations, and Future Work
 
