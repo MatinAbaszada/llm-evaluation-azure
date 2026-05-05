@@ -1,0 +1,40 @@
+Chapter 6 — Conclusion, Limitations, and Future Work
+
+This chapter closes the thesis at a high level. The detailed answers to the research questions and the formal contributions have already been presented in Chapter 5 and are not repeated here.
+
+
+6.1 Overall Conclusion
+
+The empirical study carried out across six Azure-hosted models, five benchmark datasets, and three optimization strategies confirms that selecting an LLM for an enterprise deployment cannot be reduced to a single accuracy figure. The standalone evaluation showed that quality and price are not aligned along a smooth frontier but split into two clearly separated tiers, with cost varying by almost three orders of magnitude for a 36 percentage point span in macro accuracy. Once latency and monetary cost are folded into the unified economic reward defined in Chapter 3, the highest-accuracy model is no longer the most attractive, and gpt-5.4 emerges as the most balanced default for general workloads.
+
+The optimization layers behave very differently from one another within the same evaluation framework. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. Self-consistency offers a modest, predictable accuracy lift for cheap workers when the N samples can be dispatched in parallel, but does not close the gap to the next stronger standalone. Learned routing is the only proxy strategy that beats every standalone model on a substantial region of the (lambda_error, lambda_latency) plane, and the quality of the router itself dominates the quality of its workers. Taken together, the results indicate that the value of an optimization layer in production depends much more on calibration and routing quality than on the abstract appeal of the strategy, and that reasoning-enabled inference is best treated as a targeted instrument for accuracy-critical, latency-tolerant tasks rather than a default deployment choice.
+
+
+6.2 Limitations
+
+Several limitations should be considered when interpreting these findings.
+
+The model coverage is restricted to six Azure-hosted models from the gpt-4.1, gpt-5.4, and o3-mini families. Other Azure Foundry models, as well as models hosted outside Azure, are out of scope, and the absolute reward values are tied to the unit prices in effect at the time of measurement.
+
+The benchmark suite consists of five public datasets selected to span coding, knowledge, and reasoning tasks. They approximate enterprise workloads but do not capture domain-specific data, long-context retrieval, multi-turn dialogue, or tool-augmented use cases, all of which can shift the quality and cost profile of a model.
+
+Latency measurements were collected under a single Azure deployment, region, and quota tier. As discussed in Chapter 5, throttling and queueing produced heavy-tailed distributions that materially affected the reward of reasoning-enabled models. The reported latencies should therefore be read as representative of the measurement environment rather than as model-intrinsic properties, and any redeployment under a different quota or region is expected to shift them.
+
+The economic reward function uses fixed default weights for lambda_error and lambda_latency to produce headline rankings, with sweep heatmaps reported for sensitivity. Real deployments may attach asymmetric or non-linear penalties to errors, latency tail events, or budget overruns that this scalar reward does not model. Confidence-gated cascading was evaluated using the raw model-reported probabilities without post-hoc calibration; this is realistic for an out-of-the-box Azure deployment but understates what cascading could achieve with explicit calibration. Self-consistency was tested only at N=3 with majority voting, and the routers were trained on the same task families on which they were evaluated, so generalization to unseen task types was not assessed.
+
+Finally, all measurements were taken within a bounded experimental window. LLM endpoints, pricing, and underlying model versions on Azure evolve continuously, so the absolute numerical values reported in Chapter 4 should be treated as a snapshot rather than a permanent ranking.
+
+
+6.3 Future Work
+
+The framework introduced in this thesis can be extended along several directions.
+
+A first direction is to broaden the empirical coverage. Including additional Azure Foundry model families, larger reasoning models, and open-weight models served through Azure would test whether the two-tier structure observed in the standalone evaluation generalizes beyond the six models studied here. Adding domain-specific and long-context benchmarks, as well as tool-using and agentic tasks, would similarly test whether the optimization conclusions hold outside short-form question answering and code generation.
+
+A second direction concerns the cascade strategy. The results suggest that confidence-gated cascading fails primarily because of model overconfidence. Future work could integrate post-hoc calibration of the small model's confidence, learned escalation policies that combine confidence with input features, or verifier-based escalation, in order to determine whether cascading can be made competitive with learned routing on Azure-hosted models.
+
+A third direction is to deepen the routing analysis. The finding that router quality dominates worker quality motivates studying lightweight, dedicated router models, training routers on heterogeneous task mixtures, and evaluating their behaviour under distribution shift. Combining routing with self-consistency on the cheap path, or with cascading on the expensive path, would test hybrid strategies that this thesis evaluated only in their pure form.
+
+A fourth direction is to enrich the decision framework itself. The current scalar reward could be extended with tail-latency penalties, budget caps, and reliability constraints, and evaluated against alternative aggregation rules. Coupling the reward model with live Azure telemetry, including throttling signals and quota utilisation, would move the framework from an offline benchmarking tool toward an online deployment-time decision system.
+
+Finally, periodic re-execution of the same protocol against newer Azure model versions, pricing tiers, and provisioned-throughput configurations would turn the snapshot reported here into a longitudinal study, making it possible to observe how the cost-quality-latency frontier of cloud-hosted LLMs evolves over time.
