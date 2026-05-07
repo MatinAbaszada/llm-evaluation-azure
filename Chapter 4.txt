@@ -573,9 +573,9 @@ The two figures below show the sensitivity of the self-consistency reward to the
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\textwidth]{charts/chartSC6_selfcons_accuracy_comparison.png}
+\includegraphics[width=0.95\textwidth]{charts/chartSC5_selfcons_accuracy_comparison.png}
 \caption{Per-dataset accuracy comparison between self-consistency and the standalone single-call baseline.}
-\label{fig:chartSC6_selfcons_accuracy_comparison}
+\label{fig:chartSC5_selfcons_accuracy_comparison}
 \end{figure}
 
 The cross-strategy decision map in Figure~\ref{fig:chartSC3_selfcons_best_config_heatmap} colors every cell of the ($\lambda_{e}$, $\lambda_{l}$) grid with the best overall option. The candidate set includes two self-consistency configurations and six standalone models. In contrast to the cascade case, the gpt-4.1-mini $N=3$ self-consistency configuration dominates the upper-left half, where the latency lower bound for three parallel calls, combined with a 6.8 pp accuracy gain, surpasses all standalone models. The standalone gpt-5.4 takes over the lower-right wedge where $\lambda_{e}$ is large enough, and gpt-5.4-pro re-emerges in the bottom-right strip. The gpt-5.4-mini $N=3$ self-consistency configuration does not win any cell on the macro grid.

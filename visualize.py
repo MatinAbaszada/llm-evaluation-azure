@@ -24,7 +24,7 @@ Self-consistency charts (SC prefix):
   SC2. chartSC2_selfcons_dual_heatmap.png              — Reward & cost heatmap (SC configs vs standalone)
   SC3. chartSC3_selfcons_best_config_heatmap.png       — Heatmap: best option (SC OR standalone) by (λ_error, λ_latency)
   SC4. chartSC4_selfcons_reward_vs_lambda_error.png    — Penalty vs λ_error: SC vs base model
-  SC6. chartSC6_selfcons_accuracy_comparison.png        — Grouped bar: accuracy per dataset, SC vs standalone
+  SC5. chartSC5_selfcons_accuracy_comparison.png        — Grouped bar: accuracy per dataset, SC vs standalone
 
 Router charts (R prefix):
   R1.  chartR1_router_overview.png                — Accuracy + routing split per dataset
@@ -484,13 +484,8 @@ def chart5_reward_vs_lambda_error(model_folders: dict):
     ax.axvline(LAMBDA_ERROR_DEFAULT, color="gray", linestyle=":", lw=1, label=f"default λ_error={LAMBDA_ERROR_DEFAULT}")
     ax.set_xlabel("λ_error  (error penalty weight)")
     ax.set_ylabel("Economic Penalty  (lower = better)")
-    # Build legend with model lines + reasoning/standard type indicators
     handles, labels = ax.get_legend_handles_labels()
-    type_handles = [
-        plt.Line2D([0], [0], color="gray", lw=2, linestyle="--", label="Reasoning model"),
-        plt.Line2D([0], [0], color="gray", lw=2, linestyle="-",  label="Standard model"),
-    ]
-    ax.legend(handles=handles + type_handles, labels=labels + ["Reasoning model", "Standard model"],
+    ax.legend(handles=handles, labels=labels,
               fontsize=8, framealpha=0.8, loc="upper left",
               bbox_to_anchor=(1.01, 1), borderaxespad=0)
     ax.yaxis.grid(True, linestyle="--", alpha=0.4)
@@ -547,13 +542,8 @@ def chart6_reward_vs_lambda_latency(model_folders: dict):
     ax.axvline(LAMBDA_LATENCY_DEFAULT, color="gray", linestyle=":", lw=1, label=f"default λ_latency={LAMBDA_LATENCY_DEFAULT}")
     ax.set_xlabel("λ_latency  (latency penalty weight)")
     ax.set_ylabel("Economic Penalty  (lower = better)")
-    # Build legend with model lines + reasoning/standard type indicators
     handles, labels = ax.get_legend_handles_labels()
-    type_handles = [
-        plt.Line2D([0], [0], color="gray", lw=2, linestyle="--", label="Reasoning model"),
-        plt.Line2D([0], [0], color="gray", lw=2, linestyle="-",  label="Standard model"),
-    ]
-    ax.legend(handles=handles + type_handles, labels=labels + ["Reasoning model", "Standard model"],
+    ax.legend(handles=handles, labels=labels,
               fontsize=8, framealpha=0.8, loc="upper left",
               bbox_to_anchor=(1.01, 1), borderaxespad=0)
     ax.set_yticks(ytick_pos)
@@ -614,7 +604,7 @@ def chart7_best_model_heatmap(model_folders: dict):
     ax.set_yticklabels([f"{lam_lats[t]:.3f}" for t in y_ticks])
     ax.set_xlabel("λ_error  (error penalty weight)")
     ax.set_ylabel("λ_latency  (latency penalty weight)")
-    ax.set_title("Best Model Decision Map\n(cell colour = model with highest macro-avg reward)")
+    ax.set_title("Best Model Decision Map\n(cell colour = option with highest macro-avg reward)")
 
     # Mark default operating point
     def_e = np.argmin(np.abs(lam_errors - LAMBDA_ERROR_DEFAULT))
@@ -687,7 +677,7 @@ def chart8_best_model_heatmap_per_dataset(model_folders: dict):
         ax.set_xticklabels([f"{lam_errors[t]:.1f}" for t in x_ticks], fontsize=8)
         ax.set_yticks(y_ticks)
         ax.set_yticklabels([f"{lam_lats[t]:.3f}" for t in y_ticks], fontsize=8)
-        ax.set_title(stem.upper(), fontsize=11, fontweight="bold")
+        ax.set_title(stem.upper(), fontsize=11)
         if col == 0:
             ax.set_ylabel("λ_latency", fontsize=9)
         if row == nrows - 1:
@@ -712,8 +702,8 @@ def chart8_best_model_heatmap_per_dataset(model_folders: dict):
 
     fig.suptitle(
         "Best Standalone Model per Dataset\n"
-        "(cell colour = model with highest avg reward at that λ_error × λ_latency)",
-        fontsize=13, fontweight="bold",
+        "(cell colour = option with highest macro-avg reward)",
+        fontsize=13,
     )
     fig.tight_layout(rect=[0, 0.06, 1, 1])
     _save(fig, "chart8_best_model_heatmap_per_dataset.png")
@@ -978,12 +968,6 @@ def chart_c1_cascade_combined_overview(cascade_data: dict):
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "Cascade — Escalation Rate & Accuracy across Confidence Thresholds\n"
-        "Grey bars = % questions sent to large model  |  "
-        "Lines = accuracy  |  n=X = actual number of escalated questions",
-        fontsize=11, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartC1_cascade_combined_overview.png")
 
@@ -1055,8 +1039,6 @@ def chart_c2_cascade_dual_heatmap(cascade_data: dict):
                          "RdYlGn_r", "Avg Cost (m$)")
     fig.colorbar(im2, ax=ax2, shrink=0.8, label="Avg Cost (m$)")
 
-    fig.suptitle("Cascade: Reward vs Cost by Configuration × Threshold",
-                 fontsize=13, fontweight="bold", y=1.01)
     fig.tight_layout()
     _save(fig, "chartC2_cascade_dual_heatmap.png")
 
@@ -1179,7 +1161,7 @@ def chart_c3_cascade_best_config_heatmap(model_folders: dict):
     ax.set_ylabel("λ_latency  (latency penalty weight)", fontsize=11)
     ax.set_title(
         "Best Option Decision Map: Cascade vs Standalone\n"
-        "(cell colour = option with highest macro-avg reward at those penalty weights)",
+        "(cell colour = option with highest macro-avg reward)",
         fontsize=12, fontweight="bold",
     )
 
@@ -1371,7 +1353,7 @@ def chart_c6_cascade_per_dataset_decision_map(model_folders: dict):
 
     fig.suptitle(
         "Cascade: Best Option Decision Map — Per Dataset\n"
-        "(cell = option with highest reward at those λ_error × λ_latency weights)",
+        "(cell colour = option with highest macro-avg reward)",
         fontsize=12, fontweight="bold",
     )
     fig.tight_layout()
@@ -1485,12 +1467,6 @@ def chart_c4_cascade_reward_vs_lambda_error():
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "Cascade: Economic Penalty vs λ_error\n"
-        "Each panel = one small→large config pair  |  "
-        "Lines = confidence threshold (T=60 / 75 / 90)",
-        fontsize=12, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartC4_cascade_reward_vs_lambda_error.png")
 
@@ -1610,12 +1586,6 @@ def chart_c5_cascade_reward_vs_lambda_latency():
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "Cascade: Economic Penalty vs λ_latency\n"
-        "Each panel = one small→large config pair  |  "
-        "Lines = confidence threshold (T=60 / 75 / 90)",
-        fontsize=12, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartC5_cascade_reward_vs_lambda_latency.png")
 
@@ -1830,12 +1800,6 @@ def chart_sc1_selfcons_overview(sc_data: dict, model_folders: dict):
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "Self-Consistency — Accuracy vs Vote Agreement Rate per Dataset\n"
-        "Grey bars = % questions where all N votes agree  |  "
-        "Lines: SC majority-vote vs single-call baseline",
-        fontsize=11, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartSC1_selfcons_overview.png")
 
@@ -1934,8 +1898,6 @@ def chart_sc2_selfcons_dual_heatmap(sc_data: dict, model_folders: dict):
     ax2.set_xlabel("Dataset", fontsize=10)
     fig.colorbar(im2, ax=ax2, shrink=0.8, label="Avg Cost (m$)")
 
-    fig.suptitle("Self-Consistency vs Standalone: Reward & Cost by Dataset",
-                 fontsize=13, fontweight="bold", y=1.01)
     fig.tight_layout()
     _save(fig, "chartSC2_selfcons_dual_heatmap.png")
 
@@ -2026,7 +1988,7 @@ def chart_sc3_selfcons_best_config_heatmap(sc_data: dict, model_folders: dict):
     ax.set_ylabel("λ_latency  (latency penalty weight)", fontsize=11)
     ax.set_title(
         "Best Option Decision Map: Self-Consistency vs Standalone\n"
-        "(cell colour = option with highest macro-avg reward at those penalty weights)",
+        "(cell colour = option with highest macro-avg reward)",
         fontsize=12, fontweight="bold",
     )
 
@@ -2205,11 +2167,6 @@ def chart_sc4_selfcons_reward_vs_lambda_error(sc_data: dict, model_folders: dict
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "Self-Consistency: Economic Penalty vs λ_error\n"
-        "Solid = SC majority-vote  |  Dashed = single-call base model",
-        fontsize=12, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartSC4_selfcons_reward_vs_lambda_error.png")
 
@@ -2218,7 +2175,7 @@ def chart_sc4_selfcons_reward_vs_lambda_error(sc_data: dict, model_folders: dict
 # Chart SC6 — SC vs standalone accuracy comparison (grouped bar per dataset)
 # ---------------------------------------------------------------------------
 
-def chart_sc6_selfcons_accuracy_comparison(sc_data: dict, model_folders: dict):
+def chart_sc5_selfcons_accuracy_comparison(sc_data: dict, model_folders: dict):
     """
     SC6: Grouped bar chart — accuracy per dataset for every SC config and its
     matched standalone base model, all side-by-side so gains/losses are
@@ -2304,13 +2261,8 @@ def chart_sc6_selfcons_accuracy_comparison(sc_data: dict, model_folders: dict):
         fontsize=9, framealpha=0.88,
         loc="upper left", bbox_to_anchor=(1.01, 1), borderaxespad=0,
     )
-    fig.suptitle(
-        "Self-Consistency vs Single-Call: Accuracy per Dataset\n"
-        "Solid bars = SC majority-vote  |  Hatched bars = single-call base model",
-        fontsize=12, fontweight="bold",
-    )
     fig.tight_layout()
-    _save(fig, "chartSC6_selfcons_accuracy_comparison.png")
+    _save(fig, "chartSC5_selfcons_accuracy_comparison.png")
 
 
 # ===========================================================================
@@ -2502,12 +2454,6 @@ def chart_r1_router_overview(router_data: dict, model_folders: dict):
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "LLM-as-Router — Accuracy vs Routing Distribution per Dataset\n"
-        "Grey bars = % queries sent to large model  |  "
-        "Lines: router vs small/large standalone",
-        fontsize=11, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartR1_router_overview.png")
 
@@ -2583,8 +2529,6 @@ def chart_r2_router_dual_heatmap(router_data: dict, model_folders: dict):
     ax2.set_xlabel("Dataset", fontsize=10)
     fig.colorbar(im2, ax=ax2, shrink=0.8, label="Avg Cost (m$)")
 
-    fig.suptitle("LLM-as-Router: Reward & Cost by Dataset",
-                 fontsize=13, fontweight="bold", y=1.01)
     fig.tight_layout()
     _save(fig, "chartR2_router_dual_heatmap.png")
 
@@ -2667,7 +2611,7 @@ def chart_r3_router_best_config_heatmap(router_data: dict, model_folders: dict):
     ax.set_ylabel("λ_latency  (latency penalty weight)", fontsize=11)
     ax.set_title(
         "Best Option Decision Map: LLM-as-Router vs Standalone\n"
-        "(cell colour = option with highest macro-avg reward at those penalty weights)",
+        "(cell colour = option with highest macro-avg reward)",
         fontsize=12, fontweight="bold",
     )
 
@@ -2819,7 +2763,7 @@ def chart_r6_router_per_dataset_decision_map(router_data: dict, model_folders: d
 
     fig.suptitle(
         "Router: Best Option Decision Map — Per Dataset\n"
-        "(cell = option with highest reward at those λ_error × λ_latency weights)",
+        "(cell colour = option with highest macro-avg reward)",
         fontsize=12, fontweight="bold",
     )
     fig.tight_layout()
@@ -2926,11 +2870,6 @@ def chart_r4_router_reward_vs_lambda_error(router_data: dict, model_folders: dic
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "LLM-as-Router: Economic Penalty vs λ_error\n"
-        "Solid = router  |  Dashed = small standalone  |  Dotted = large standalone",
-        fontsize=12, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartR4_router_reward_vs_lambda_error.png")
 
@@ -3053,11 +2992,6 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
         row, col = divmod(idx, ncols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle(
-        "LLM-as-Router: Economic Penalty vs λ_latency\n"
-        "Solid = router  |  Dashed = small standalone  |  Dotted = large standalone",
-        fontsize=12, fontweight="bold", y=1.01,
-    )
     fig.tight_layout()
     _save(fig, "chartR5_router_reward_vs_lambda_latency.png")
 
@@ -3109,7 +3043,7 @@ if __name__ == "__main__":
         chart_sc2_selfcons_dual_heatmap(sc_data, model_folders)
         chart_sc3_selfcons_best_config_heatmap(sc_data, model_folders)
         chart_sc4_selfcons_reward_vs_lambda_error(sc_data, model_folders)
-        chart_sc6_selfcons_accuracy_comparison(sc_data, model_folders)
+        chart_sc5_selfcons_accuracy_comparison(sc_data, model_folders)
     else:
         print("  No self-consistency results found. Run optimizer.py --selfcons first.")
 

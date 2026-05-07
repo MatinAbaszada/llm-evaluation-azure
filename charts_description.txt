@@ -246,7 +246,7 @@ Shows that self-consistency typically becomes preferable as error penalties
 grow large enough to justify the extra latency and cost.
 
 --------------------------------------------------------------------------------
-chartSC6_selfcons_accuracy_comparison.png
+chartSC5_selfcons_accuracy_comparison.png
 --------------------------------------------------------------------------------
 Grouped bar chart of **accuracy per dataset**, comparing each self-
 consistency configuration to its corresponding standalone (single-call)
@@ -254,7 +254,7 @@ model. Each dataset on the x-axis; bars within a group show
 single-call vs. N=3-vote accuracy. Makes the per-task benefit of voting
 directly visible.
 
-(Note: there is no chartSC5 — λ_latency sweeps are omitted for self-
-consistency because its latency cost is dominated by the fixed N parallel
-calls and is not particularly informative as a sweep.)
+(Note: a λ_latency sweep is omitted for self-consistency because its
+latency cost is dominated by the fixed N parallel calls and is not
+particularly informative as a sweep.)
 ================================================================================

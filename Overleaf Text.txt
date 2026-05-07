@@ -68,7 +68,7 @@
 \Subtitle{\Large{Your Subtitle}}
 \Author{Matin Abaszada}
 \Supervisor{Prof. Dr. Ivan Ovsyannikov}
-\ShortTitle{Your Short Title}
+\ShortTitle{Empirical Evaluation of Azure LLMs}
 \Date{11 March 2026}
 \FirstAddressLine{Campus Ring 3}
 \SecondAddressLine{28759 Bremen}
@@ -1013,9 +1013,9 @@ The two figures below show the sensitivity of the self-consistency reward to the
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.95\textwidth]{charts/chartSC6_selfcons_accuracy_comparison.png}
+\includegraphics[width=0.95\textwidth]{charts/chartSC5_selfcons_accuracy_comparison.png}
 \caption{Per-dataset accuracy comparison between self-consistency and the standalone single-call baseline.}
-\label{fig:chartSC6_selfcons_accuracy_comparison}
+\label{fig:chartSC5_selfcons_accuracy_comparison}
 \end{figure}
 
 The cross-strategy decision map in Figure~\ref{fig:chartSC3_selfcons_best_config_heatmap} colors every cell of the ($\lambda_{e}$, $\lambda_{l}$) grid with the best overall option. The candidate set includes two self-consistency configurations and six standalone models. In contrast to the cascade case, the gpt-4.1-mini $N=3$ self-consistency configuration dominates the upper-left half, where the latency lower bound for three parallel calls, combined with a 6.8 pp accuracy gain, surpasses all standalone models. The standalone gpt-5.4 takes over the lower-right wedge where $\lambda_{e}$ is large enough, and gpt-5.4-pro re-emerges in the bottom-right strip. The gpt-5.4-mini $N=3$ self-consistency configuration does not win any cell on the macro grid.
@@ -1120,7 +1120,37 @@ This thesis approaches model selection from a different perspective. To fold acc
 
 Further, cascade, router, and self-consistency techniques are evaluated within the same framework. Results reveal that only the learned routing method outperforms a standalone model, while LLM overconfidence neutralizes the effectiveness of the confidence-based cascading approach. Finally, the thesis addresses several cloud-specific constraints, namely throttling, quota-driven latency outliers, and the divergence between mean and median latency, which are decisive in real deployments but usually absent from academic evaluations.
 
-\chapter{Conclusion}
+\chapter{Conclusion, Limitations, and Future Work} \label{ch:conclusion}
+
+\section{Overall Conclusion} \label{sec:conclusion_overall}
+
+Through covering six Azure-hosted models, five datasets, and three optimization strategies, the empirical study of the thesis confirms that for enterprise deployments, LLM selection cannot be reduced to a single accuracy metric. Standalone evaluation shows that accuracy and cost do not align with a smooth frontier. Rather, they are divided into two distinct tiers, such that a 36 pp increase in macro accuracy corresponds to a three-order-of-magnitude difference in cost. After applying the economic reward function defined in Chapter~\ref{ch:methodology} with latency and cost values and calculating the reward, the model with the highest accuracy does not become the most favorable choice anymore and instead, gpt-5.4 emerges as the most balanced choice for general tasks.
+
+The optimization techniques behave very differently from one another. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. Even though self-consistency does not reach the next stronger standalone model, it offers a modest, predictable accuracy lift for cheap workers when $N$ samples can be dispatched in parallel. Only the routing strategy beats every standalone model in a substantial region of the ($\lambda_{e}$, $\lambda_{l}$) plane, and the router's quality dominates that of its workers. These results suggest that the benefit of an optimization layer in production depends much more on calibration and routing quality than on the intrinsic appeal of the strategy. Lastly, reasoning-enabled inference is best suited for accuracy-critical, latency-tolerant tasks rather than as a default approach.
+
+\section{Limitations} \label{sec:conclusion_limitations}
+
+Regarding the results, several limitations should be considered.
+
+First, the model coverage is limited to six Azure-hosted models from the gpt-4.1, gpt-5.4, and o3-mini families, meaning other Azure Foundry models and out-of-Azure-scope models are not covered in this research. Furthermore, when calculating costs, unit prices at the time of measurement are used. Therefore, the results are subject to change as prices change in the future.
+
+A second limitation could be the study's scope. The benchmark suite consists of five specially selected datasets to cover coding, knowledge, and reasoning tasks. Even though the purpose of these datasets was to represent various enterprise workloads, the study still fails to cover cases involving domain-specific data, long-context retrieval, and multi-turn dialogue, which could affect a model's quality and cost profile.
+
+Latency measurements were collected under a single Azure deployment, region, and quota tier. As discussed in Chapter~\ref{ch:discussion}, the resulting heavy-tailed distributions from the throttling and queueing significantly changed the performance of reasoning-enabled models. Therefore, a shift in the research results is expected when the study is re-conducted with a different quota or region.
+
+Another limitation concerns the economic reward function. It is used to compute the core rankings with constant $\lambda_{e}$ and $\lambda_{l}$ parameters. Later, by sweeping these weights, heatmaps reported sensitivity. However, because the reward function used in the study is scalar, it is unable to capture certain conditions, such as asymmetric error costs, tail latency, or budget overruns, which are highly likely in real deployments. Finally, the cascading approach was evaluated using the model's raw confidence probability without any post-hoc calibration. Although this approach is an out-of-the-box Azure deployment, it underestimates the capacity of the cascading strategy when calibrated explicitly.
+
+\section{Future Work} \label{sec:conclusion_future}
+
+There are several extensions possible for the framework introduced in this thesis.
+
+The first direction is to broaden the domain of empirical evaluation to find out whether the observed patterns hold beyond the models tested in this study. To this end, the same experiments could be conducted on additional Azure-hosted model families and on open-weight models that could be fine-tuned on custom data. Adding domain-specific and long-context benchmarks would further test whether the optimization conclusions hold outside short-form question answering and code generation.
+
+A second direction concerns the cascade strategy. As discussed earlier, the primary reason for the failure of confidence-gated cascade is model overconfidence. Therefore, future work could integrate post-hoc calibration of the small model's confidence, learned escalation policies that combine confidence with input features, or verifier-based escalation, in order to determine whether cascading can be made competitive with learned routing on Azure-hosted models.
+
+A third direction is to analyze routing further. Since router quality has a greater impact than worker quality, it is important to study lightweight, dedicated router models, train routers for diverse tasks, and assess their performance during distribution shifts. Testing hybrid strategies by combining routing with self-consistency on the inexpensive path or with cascading on the costly path would extend this thesis, which evaluated these strategies only in isolation.
+
+The final focus area is to further extend the decision framework to include tail-latency penalties and budget restrictions, and to compare performance with competing aggregation rules. Introducing live throttling signals and usage quota information into the current framework will seamlessly transition it into an online decision system for cloud-deployment-time decisions.
 
 \nocite{*}
 \renewcommand{\bibname}{References}
