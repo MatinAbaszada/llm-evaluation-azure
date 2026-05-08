@@ -1,4 +1,4 @@
-% Credit by Matin Abaszada
+﻿% Credit by Matin Abaszada
 \documentclass{thesis_template}
 \usepackage{subfig}
 \usepackage{adjustbox}
@@ -480,7 +480,7 @@ Wall-clock latency was measured per request as defined in Section~\ref{subsec:la
 \label{tab:standalone_latency}
 \begin{tabular}{lrrrr}
 \toprule
-Model & Mean (s) & Median (s) & \# outliers $>$120s & Max (s) \\
+\multicolumn{1}{c}{Model} & \multicolumn{1}{c}{Mean (s)} & \multicolumn{1}{c}{Median (s)} & \multicolumn{1}{c}{\# outliers $>$120s} & \multicolumn{1}{c}{Max (s)} \\
 \midrule
 gpt-4.1-mini & 17.4 & 9.6 & 35 & 634.7 \\
 gpt-5.4-mini & 18.4 & 8.2 & 23 & 630.9 \\
@@ -508,7 +508,7 @@ Per-request cost was computed deterministically from token counts using the cost
 \label{tab:standalone_cost}
 \begin{tabular}{lrr}
 \toprule
-Model & Macro avg cost/req (m\$) & GPQA cost/req (m\$) \\
+\multicolumn{1}{c}{Model} & \multicolumn{1}{c}{Macro avg cost/req (m\$)} & \multicolumn{1}{c}{GPQA cost/req (m\$)} \\
 \midrule
 gpt-5.4-mini & 0.138 & 0.124 \\
 gpt-4.1-mini & 0.255 & 0.346 \\
@@ -541,7 +541,7 @@ As defined in Section~\ref{subsec:reward} (Equation~\ref{eq:reward}), the econom
 \label{tab:standalone_reward}
 \begin{tabular}{lrr}
 \toprule
-Model & Avg reward & Avg penalty \\
+\multicolumn{1}{c}{Model} & \multicolumn{1}{c}{Avg reward} & \multicolumn{1}{c}{Avg penalty} \\
 \midrule
 gpt-5.4 & $-$0.444 & 0.444 \\
 gpt-4.1 & $-$0.527 & 0.527 \\
@@ -608,7 +608,7 @@ The single most important measurement of the cascade experiment is the escalatio
 \label{tab:cascade_escalation}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & $T=60$ & $T=75$ & $T=90$ \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{$T=60$} & \multicolumn{1}{c}{$T=75$} & \multicolumn{1}{c}{$T=90$} \\
 \midrule
 gpt-4.1-mini $\rightarrow$ gpt-4.1 & 0.1\% & 0.4\% & 1.1\% \\
 gpt-4.1-mini $\rightarrow$ gpt-5.4 & 0.0\% & 0.1\% & 0.1\% \\
@@ -635,7 +635,7 @@ The mechanical consequence is that the threshold parameter $T$ has almost no eff
 \label{tab:cascade_accuracy}
 \begin{tabular}{lrrrrr}
 \toprule
-Configuration & $T=60$ & $T=75$ & $T=90$ & Small alone & Large alone \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{$T=60$} & \multicolumn{1}{c}{$T=75$} & \multicolumn{1}{c}{$T=90$} & \multicolumn{1}{c}{Small alone} & \multicolumn{1}{c}{Large alone} \\
 \midrule
 gpt-4.1-mini $\rightarrow$ gpt-4.1 & 57.7\% & 57.7\% & 57.7\% & 57.6\% & 68.3\% \\
 gpt-4.1-mini $\rightarrow$ gpt-5.4 & 57.6\% & 57.7\% & 57.7\% & 57.6\% & 90.8\% \\
@@ -661,7 +661,7 @@ The cost picture is qualitatively similar but not identical. Table~\ref{tab:casc
 \label{tab:cascade_cost}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & $T=60$ cost (m\$) & $T=90$ cost (m\$) & Small alone (m\$) \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{$T=60$ cost (m\$)} & \multicolumn{1}{c}{$T=90$ cost (m\$)} & \multicolumn{1}{c}{Small alone (m\$)} \\
 \midrule
 gpt-4.1-mini $\rightarrow$ gpt-4.1 & 0.255 & 0.262 & 0.255 \\
 gpt-4.1-mini $\rightarrow$ gpt-5.4 & 0.255 & 0.275 & 0.255 \\
@@ -692,7 +692,7 @@ Table~\ref{tab:cascade_reward} shows the macro-average reward across cascade con
 \label{tab:cascade_reward}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & $T=60$ & $T=75$ & $T=90$ \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{$T=60$} & \multicolumn{1}{c}{$T=75$} & \multicolumn{1}{c}{$T=90$} \\
 \midrule
 gpt-4.1-mini $\rightarrow$ gpt-4.1 & $-$0.601 & $-$0.602 & $-$0.606 \\
 gpt-4.1-mini $\rightarrow$ gpt-5.4 & $-$0.601 & $-$0.601 & $-$0.601 \\
@@ -750,7 +750,7 @@ In contrast to the cascade, the router actually directs a substantial fraction o
 \label{tab:router_routing}
 \begin{tabular}{lrrrrrr}
 \toprule
-Configuration & Overall & HumanEval & MBPP & MMLU-Pro & GPQA & GSM8K \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{Overall} & \multicolumn{1}{c}{HumanEval} & \multicolumn{1}{c}{MBPP} & \multicolumn{1}{c}{MMLU-Pro} & \multicolumn{1}{c}{GPQA} & \multicolumn{1}{c}{GSM8K} \\
 \midrule
 rtr=4.1-mini, 4.1-mini $\rightarrow$ 4.1 & 11.4\% & 1.8\% & 1.4\% & 16.0\% & 40.8\% & 0.0\% \\
 rtr=4.1-mini, 5.4-mini $\rightarrow$ 5.4 & 10.7\% & 1.2\% & 1.1\% & 15.3\% & 39.8\% & 0.0\% \\
@@ -777,7 +777,7 @@ The accuracy outcomes follow directly from the routing behavior. Table~\ref{tab:
 \label{tab:router_accuracy}
 \begin{tabular}{lrrrr}
 \toprule
-Configuration & Router acc & Small alone & Large alone & $\Delta$ vs.\ small \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{Router acc} & \multicolumn{1}{c}{Small alone} & \multicolumn{1}{c}{Large alone} & \multicolumn{1}{c}{$\Delta$ vs.\ small} \\
 \midrule
 rtr=4.1-mini, 4.1-mini $\rightarrow$ 4.1 & 58.2\% & 57.6\% & 68.3\% & $+$0.6 pp \\
 rtr=4.1-mini, 5.4-mini $\rightarrow$ 5.4 & 60.8\% & 60.6\% & 90.8\% & $+$0.2 pp \\
@@ -803,7 +803,7 @@ Cost behaves the opposite way. Every router configuration is markedly cheaper th
 \label{tab:router_cost}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & Router cost (m\$) & Small alone (m\$) & Large alone (m\$) \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{Router cost (m\$)} & \multicolumn{1}{c}{Small alone (m\$)} & \multicolumn{1}{c}{Large alone (m\$)} \\
 \midrule
 rtr=4.1-mini, 4.1-mini $\rightarrow$ 4.1 & 0.401 & 0.255 & 0.687 \\
 rtr=4.1-mini, 5.4-mini $\rightarrow$ 5.4 & 0.403 & 0.138 & 5.370 \\
@@ -834,7 +834,7 @@ Table~\ref{tab:router_reward} shows the macro-average reward of every router con
 \label{tab:router_reward}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & Router reward & Small alone & Large alone \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{Router reward} & \multicolumn{1}{c}{Small alone} & \multicolumn{1}{c}{Large alone} \\
 \midrule
 rtr=4.1-mini, 4.1-mini $\rightarrow$ 4.1 & $-$0.613 & $-$0.582 & $-$0.527 \\
 rtr=4.1-mini, 5.4-mini $\rightarrow$ 5.4 & $-$0.681 & $-$0.569 & $-$0.444 \\
@@ -894,7 +894,7 @@ The self-consistency method has a specific vote agreement rate metric, calculate
 \label{tab:sc_agreement}
 \begin{tabular}{lrrrrrr}
 \toprule
-Configuration & Macro & HumanEval & MBPP & MMLU-Pro & GPQA & GSM8K \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{Macro} & \multicolumn{1}{c}{HumanEval} & \multicolumn{1}{c}{MBPP} & \multicolumn{1}{c}{MMLU-Pro} & \multicolumn{1}{c}{GPQA} & \multicolumn{1}{c}{GSM8K} \\
 \midrule
 gpt-4.1-mini $N=3$ & 78.8\% & 94.0\% & 88.0\% & 74.0\% & 76.0\% & 62.0\% \\
 gpt-5.4-mini $N=3$ & 70.0\% & 92.0\% & 90.0\% & 56.0\% & 58.0\% & 54.0\% \\
@@ -912,7 +912,7 @@ Table~\ref{tab:sc_accuracy} presents the accuracy results for the same configura
 \label{tab:sc_accuracy}
 \begin{tabular}{lrrrrrr}
 \toprule
-Dataset & gpt-4.1-mini & SC 4.1-mini & $\Delta$ & gpt-5.4-mini & SC 5.4-mini & $\Delta$ \\
+\multicolumn{1}{c}{Dataset} & \multicolumn{1}{c}{gpt-4.1-mini} & \multicolumn{1}{c}{SC 4.1-mini} & \multicolumn{1}{c}{$\Delta$} & \multicolumn{1}{c}{gpt-5.4-mini} & \multicolumn{1}{c}{SC 5.4-mini} & \multicolumn{1}{c}{$\Delta$} \\
 \midrule
 HumanEval & 91.4\% & 94.0\% & $+$2.6 pp & 88.3\% & 92.0\% & $+$3.7 pp \\
 MBPP & 82.7\% & 82.0\% & $-$0.7 pp & 81.0\% & 82.0\% & $+$1.0 pp \\
@@ -945,7 +945,7 @@ Cost scales close to linearly with the number of votes. Table~\ref{tab:sc_cost} 
 \label{tab:sc_cost}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & SC cost (m\$) & Standalone (m\$) & Multiplier \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{SC cost (m\$)} & \multicolumn{1}{c}{Standalone (m\$)} & \multicolumn{1}{c}{Multiplier} \\
 \midrule
 gpt-4.1-mini $N=3$ & 0.765 & 0.255 & 3.00$\times$ \\
 gpt-5.4-mini $N=3$ & 0.414 & 0.138 & 3.00$\times$ \\
@@ -963,7 +963,7 @@ Latency behaves differently from cost. The $N=3$ calls are dispatched in paralle
 \label{tab:sc_latency}
 \begin{tabular}{lrr}
 \toprule
-Configuration & SC latency (s) & Standalone (s) \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{SC latency (s)} & \multicolumn{1}{c}{Standalone (s)} \\
 \midrule
 gpt-4.1-mini $N=3$ & 18.62 & 17.40 \\
 gpt-5.4-mini $N=3$ & 19.68 & 18.39 \\
@@ -992,7 +992,7 @@ After computing the economic reward of Section~\ref{subsec:reward} at the defaul
 \label{tab:sc_reward}
 \begin{tabular}{lrrr}
 \toprule
-Configuration & SC reward & Standalone & $\Delta$ \\
+\multicolumn{1}{c}{Configuration} & \multicolumn{1}{c}{SC reward} & \multicolumn{1}{c}{Standalone} & \multicolumn{1}{c}{$\Delta$} \\
 \midrule
 gpt-4.1-mini $N=3$ & $-$0.543 & $-$0.582 & $+$0.039 \\
 gpt-5.4-mini $N=3$ & $-$0.565 & $-$0.569 & $+$0.004 \\
@@ -1040,7 +1040,7 @@ Table~\ref{tab:cross_summary} displays the best-performing model for each strate
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llrrrr}
 \toprule
-Strategy & Best configuration & Accuracy & Latency & Cost (m\$) & Reward \\
+\multicolumn{1}{c}{Strategy} & \multicolumn{1}{c}{Best configuration} & \multicolumn{1}{c}{Accuracy} & \multicolumn{1}{c}{Latency} & \multicolumn{1}{c}{Cost (m\$)} & \multicolumn{1}{c}{Reward} \\
 \midrule
 Standalone & gpt-5.4 & 90.8\% & 34.7s & 5.370 & $-$0.444 \\
 Router & rtr=gpt-5.4-mini, gpt-4.1-mini $\rightarrow$ gpt-4.1 & 73.1\% & 22.9s & 0.344 & $-$0.498 \\
