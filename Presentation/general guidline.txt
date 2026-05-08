@@ -1,0 +1,21 @@
+4. The presentation schedule is tight. You have 15 minutes for your presentation and 5 minutes for questions and answers. Make sure your talk fits into the 15 minutes. Talking more than 15 minutes is a problem as is talking substantially less than 15 minutes. Practice to get a feel on time. Be prepared to speed up or to slow down as needed. Consider having backup slides for discussions.
+ 
+5. Simple slide designs tend to work well. Slides exist to support your what you are talking about, the more complex they get, the more the audience will focus on reading the slide content and the less they will listen to what you are saying.
+ 
+6. Your target audience are general computer scientists, who are not necessarily experts on your specific topic. Make sure your research questions are well phrased and motivated, make sure your research methodology is clear and results are unambiguous. Avoid complex notations and formulas, your audience is listening to many presentations in sequence, hence reduce the cognitive load, less is usually more. Focus on your main contribution, leave out details, perhaps prepare extra slides for discussion should certain questions come up. For more details, read the relevant chapters in Justin Zobel's "Writing for Computer Science" or watch relevant YouTube videos.
+ 
+7. The presentation grading criteria are listed on the course web page and summarized here again:
+
+- clarity of the slides
+
+- clarity of the presentation
+
+- motivation and flow of the presentation
+
+- technical clarity (proper use of notations etc., demo where feasible)
+
+- technical contribution and originality
+
+- time management
+
+- answers to questions
