@@ -60,8 +60,9 @@ Inspired by Microsoft Azure branding — professional, modern, readable in any r
 
 **Layout:**
 - Top 60% of slide: Deep Navy (#0B1F4B) background
-- Large white title text
+- Large white title text, centered
 - Bottom 40%: White background with author/supervisor info
+- **Constructor University logo** placed top-left of the Deep Navy section (or centered above the title)
 
 **Content:**
 - **Title:** Empirical Evaluation and Cost Optimization of Large Language Models in Azure Cloud Environments
@@ -71,6 +72,26 @@ Inspired by Microsoft Azure branding — professional, modern, readable in any r
 - **Date:** [Defense Date]
 - Small Azure Blue horizontal rule between top and bottom sections
 
+**LOGO EXTRACTION NOTE:**
+The Constructor University logo is in `Presentation/Thesis Guideline.pptx` (first slide).
+Claude (via python-pptx) can extract it automatically:
+```python
+from pptx import Presentation
+from pptx.util import Inches
+from PIL import Image
+import io
+
+prs = Presentation('Presentation/Thesis Guideline.pptx')
+slide = prs.slides[0]
+for shape in slide.shapes:
+    if shape.shape_type == 13:  # MSO_SHAPE_TYPE.PICTURE
+        img_bytes = shape.image.blob
+        with open('Presentation/cu_logo_extracted.png', 'wb') as f:
+            f.write(img_bytes)
+        break
+```
+Then embed the saved PNG into the title slide of the new presentation. This is fully automated — Claude can include this in the python-pptx build script.
+
 **What to say:**
 - Briefly introduce yourself and the topic. One sentence: "This thesis evaluates six Azure-hosted LLMs through a unified cost-quality-latency framework and compares three inference optimization strategies."
 
@@ -79,46 +100,57 @@ Inspired by Microsoft Azure branding — professional, modern, readable in any r
 ---
 
 ### SLIDE 2 — MOTIVATION: WHY DOES THIS MATTER?
-**Duration:** ~1 minute 30 seconds
+**Duration:** ~1 minute 45 seconds
 
 **Layout:**
-- 3 visual icon blocks side by side, each with a short label and 1 sentence beneath
+- 4 visual blocks arranged as a flow: top-row = 3 blocks side by side showing the journey, bottom = one wide callout
 
-**Content:**
-Three challenge pillars (use icon + short label):
-1. **LLMs are everywhere** — Integrated into coding, Q&A, documentation, enterprise workflows
-2. **Azure as the enterprise platform** — Microsoft Foundry: one catalog, pay-per-token, quotas, rate limits
-3. **The real problem** — Picking the "strongest" model is not the same as picking the "best" model. Cost, latency, and accuracy all matter simultaneously.
+**Content — tell it as a story, left to right:**
 
-**Callout box (bottom center):**
-> "A model that is 93% accurate at $106 per 1000 requests may be a worse deployment choice than one that is 91% accurate at $5 per 1000 requests."
+**Block 1 — The Expensive Reality (icon: server rack / GPU)**
+> Most LLM research assumes you run models **locally**.
+> That means: GPU clusters, cooling, security infrastructure, dedicated ops teams, and millions in capital expense.
+
+**Block 2 — The Shift to Cloud (icon: cloud)**
+> Today, enterprises move to **cloud environments** instead.
+> One API call replaces an entire data center. Security, compliance, scaling — handled. Pay only for what you use.
+
+**Block 3 — Azure as the Platform (icon: Azure logo)**
+> **Microsoft Azure** is one of the leading cloud LLM platforms.
+> Model catalog (OpenAI, DeepSeek, Meta…), pay-per-token pricing, quotas, rate limits — all in one place.
+
+**Wide callout box (bottom, full width):**
+> ⚠ But in the cloud, "best model" ≠ "strongest model".
+> A model at 93% accuracy that costs 770× more per request may be the wrong enterprise choice.
+> **Accuracy, cost, and latency must all be evaluated together.**
 
 **What to say:**
-- Explain that LLMs are deployed in enterprise settings via Azure where you pay per token, have rate limits, and latency is measured. The challenge: academia evaluates models on accuracy alone, but in practice you also pay for speed and cost. That gap is exactly what this thesis addresses.
+- "Most academic LLM research is done by running models locally — on expensive GPU infrastructure. In practice, the majority of enterprises today don't do that. They use cloud environments: pay-per-token, no hardware, security already built in. Azure is one of the most prominent of these platforms, offering dozens of models through a single API. But this changes the evaluation problem. In the cloud, you're billed per token, your latency reflects quota tiers and throttling, and the so-called strongest model might be completely impractical for your budget or time constraints. That's the motivation for this thesis."
 
 **No chart on this slide.**
 
 ---
 
 ### SLIDE 3 — RESEARCH GAP & QUESTIONS
-**Duration:** ~1 minute
+**Duration:** ~1 minute 15 seconds
 
 **Layout:**
-- Split: Left half = Gap statement (2 bullets), Right half = 3 numbered RQs
+- Split: Left 55% = Gap (3 bullets, stacked), Right 45% = 3 numbered RQs in a blue box
 
 **Content:**
 
-**Gap:**
-- Existing literature evaluates models on *single dimensions* (accuracy only, or cost only)
-- Optimization strategies (routing, cascading) are tested against *their own internal goal*, not against a unified deployment metric
+**Gap (left side, 3 bullets):**
+- Most existing studies evaluate models in isolation — accuracy only, or cost only, never together
+- Optimization strategies (routing, cascading) are benchmarked against their *own internal goal*, not a unified deployment reward
+- **Critically: almost no studies test these strategies in a real cloud environment** — where pricing, quotas, and rate limits directly shape measured latency and cost. Testing in Azure fills this gap by grounding results in actual enterprise service constraints.
 
-**Research Questions:**
+**Research Questions (right side, numbered box):**
 1. How do Azure-hosted LLMs differ across accuracy, latency, and cost?
 2. Is reasoning-enabled inference economically justified?
 3. Can a proxy optimization layer (router/cascade/self-consistency) improve cost-efficiency?
 
 **What to say:**
-- Keep brief. Say the existing literature doesn't compare all three dimensions together, and that's the gap this thesis fills.
+- "The literature has two gaps. First, metrics are evaluated in isolation — accuracy papers don't count cost, cost papers don't measure quality. Second, and more practically relevant: almost none of these studies are conducted in a live cloud environment. Azure has quotas, throttling, pay-per-token pricing, and version-controlled deployments — all of which affect your actual deployment decision. This thesis closes that gap by running everything in a real Azure environment and evaluating all results through a single unified framework."
 
 **No chart on this slide.**
 
@@ -187,8 +219,16 @@ Reward = − ( Cost  +  λ_latency × Latency  +  λ_error × Error )
 
 **Note:** λ_latency = 0.01, λ_error = 1.0 by default. Sensitivity analysis was done by sweeping these values.
 
-**What to say:**
-- "Instead of comparing models on a single metric, we used this reward function that folds all three deployment concerns into one number. This lets us rank not just individual models, but all optimization strategies on the same scale. The lambda weights let us see how the ranking changes if a business cares more about speed or more about accuracy."
+**WHY NEGATIVE REWARD? — Include this as a spoken explanation, not on slide text:**
+The reward is intentionally defined as a *negative penalty* rather than a positive utility. This design comes from the same reasoning used in the Economic Evaluation of LLMs (Yue et al.):
+- A *positive* utility would require you to define a maximum achievable score — an arbitrary ceiling. What is a "perfect" answer worth in dollars?
+- A *negative penalty* has a natural zero: **zero means no cost, no latency, no error** — a theoretically perfect free instant answer. Every real model can only be penalized from this ideal.
+- This makes values directly interpretable: −0.444 means the average request incurred 0.444 units of combined penalty.
+- It also aligns with **loss minimization** — the standard framing in both economics and machine learning — rather than inventing an arbitrary utility scale.
+- Finally, it makes sensitivity analysis intuitive: as λ_error increases, models with higher error rates drop faster (steeper negative slope), which is exactly what you observe in the sweep charts.
+
+**What to say on slide:**
+- "Instead of comparing models on a single metric, we used this reward function that folds all three deployment concerns into one number. It's defined as a negative penalty — zero would mean a free, instant, always-correct answer. Every real model incurs some penalty. This lets us rank all models and strategies on the same scale, and the lambda weights let us simulate different deployment priorities."
 
 **No chart on this slide (formula displayed as styled text).**
 
@@ -285,8 +325,13 @@ Reward = − ( Cost  +  λ_latency × Latency  +  λ_error × Error )
 
 ---
 
-### SLIDE 10 — OPTIMIZATION STRATEGY 1: CASCADE (FAILED BY OVERCONFIDENCE)
+### SLIDE 10 — OPTIMIZATION STRATEGY 1: CASCADE (BLOCKED BY OVERCONFIDENCE)
 **Duration:** ~1 minute 15 seconds
+
+**PSYCHOLOGICAL NOTE — CRESCENDO ORDER (worst → modest → best):**
+Strategies are intentionally ordered from weakest to strongest. This builds a narrative arc:
+"Here's the idea that should work but doesn't → here's a partial win → here's what actually works."
+This leaves the audience on a high note and is the most effective structure for academic defense presentations (primacy-recency: they remember the *last* thing you say).
 
 **CHART: chartC2_cascade_dual_heatmap.png** ← USE THIS ONE
 
@@ -307,18 +352,43 @@ Query → [Small Model]
 > ⚠ Maximum escalation rate was only 7.3% even at T=90. Modern LLMs are overconfident — the gate almost never opens.
 
 **What to say:**
-- "The cascade strategy sounds logical: let a cheap model answer easy questions, escalate hard ones to a stronger model. The problem is that current Azure-hosted LLMs almost never report low confidence. Even at the most aggressive threshold, only 7.3% of queries escalated. So every cascade configuration behaves almost identically to its small model alone — no accuracy gain, just marginally higher latency."
+- "Let's look at our first optimization attempt. The cascade strategy is intuitive: let a cheap model answer easy questions, and only escalate to a stronger model when the cheap one is uncertain. The problem? Current Azure-hosted LLMs are systematically overconfident. They almost never report low confidence. Even at the most aggressive threshold, only 7.3% of queries escalated. So every cascade configuration behaves almost identically to its small model alone — no meaningful accuracy gain, just a small latency overhead. Cascade failed — not because the idea is wrong, but because it requires calibrated confidence, which current models don't provide out of the box."
 
 ---
 
-### SLIDE 11 — OPTIMIZATION STRATEGY 2: ROUTER (THE WINNER)
+### SLIDE 11 — OPTIMIZATION STRATEGY 2: SELF-CONSISTENCY (MODEST GAINS)
+**Duration:** ~1 minute
+
+**CHART: chartSC5_selfcons_accuracy_comparison.png** ← USE THIS ONE
+
+**Layout:**
+- Chart takes 65% of slide (right side)
+- Left side: mini diagram + callout
+
+**Custom mini-diagram (left side):**
+```
+Query → [Model] × 3 (parallel)
+         ↓
+    Majority Vote → Final Answer
+```
+
+**Callout box:**
+> ✔ gpt-4.1-mini N=3: +6.8 pp accuracy (MMLU-Pro: 27.8% → 44.0%)
+> ⚠ Cost: exactly 3× more expensive. Still below next standalone tier (68.3%).
+
+**What to say:**
+- "Self-consistency takes a different approach — it doesn't change the model at all. It sends the same question three times in parallel and picks the majority answer. This genuinely improves accuracy: on MMLU-Pro, gpt-4.1-mini goes from 28% to 44%. Cost triples, but latency is only 7% higher because the calls run in parallel. It's a real improvement — but it still doesn't close the gap to the next standalone tier. A partial win: reliable, predictable, but limited."
+
+---
+
+### SLIDE 12 — OPTIMIZATION STRATEGY 3: ROUTER (THE WINNER — CLIMAX)
 **Duration:** ~1 minute 30 seconds
 
 **CHART: chartR3_router_best_config_heatmap.png** ← USE THIS ONE
 
 **Layout:**
 - Left: Brief explanation of router (diagram: Router classifies → Small or Large)
-- Right: The decision heatmap (router wins a substantial band)
+- Right: The decision heatmap (router wins a substantial diagonal band)
 
 **Custom mini-diagram (left side):**
 ```
@@ -329,41 +399,28 @@ Query → [Router Model (gpt-5.4-mini)]
 ```
 
 **Key achievement callout:**
-> ✔ Best router: +15.5 pp accuracy over small baseline, reward of −0.498 vs. −0.527 for gpt-4.1 standalone.
-> The router wins a large diagonal region of the decision map — the ONLY optimization to do so.
+> ✔ Best router: +15.5 pp accuracy over small baseline at 16× lower cost than gpt-5.4.
+> Reward: −0.498 — beats gpt-4.1 (−0.527) and both mini standalones.
+> **The ONLY optimization that wins a region of the macro decision map.**
 
 **Numbers to mention:**
 - Router accuracy: 73.1% (vs small model 57.6%)
-- Router cost: 0.344 m$ (vs large model 0.687 m$)
-- Router reward: −0.498 (beats all standalones except gpt-5.4)
+- Router cost: 0.344 m$ (vs gpt-4.1 standalone: 0.687 m$, vs gpt-5.4: 5.37 m$)
+- Router reward: −0.498 (second only to gpt-5.4 at −0.444)
+
+**IMPORTANT — Why router beats SC despite SC winning larger area in its own chart:**
+In chartSC3, SC is compared against standalone models ONLY (no router in the candidate set).
+In chartR3, the router is compared against standalone models ONLY (no SC in the candidate set).
+The two charts DO NOT compete against each other.
+- SC wins the top-left (very high λ_latency zone) — an extreme scenario where even tiny latency differences dominate
+- The router wins the central diagonal band, which includes the DEFAULT ★ setting (λ_error=1.0, λ_latency=0.01)
+- At the star position in SC3, gpt-5.4 wins — NOT the SC configuration
+- At the star position in R3, the router wins
+- The star = where real deployments typically live. The router wins there; SC does not.
+- Additionally: SC wins because its latency is barely worse than standalone (1.07×), so under extreme latency penalties it "looks good" by not being much worse — but it's not winning on merit in the region that matters.
 
 **What to say:**
-- "The router uses an external classifier to decide which model answers each query. Unlike the cascade, the router doesn't rely on the model's own confidence. The best configuration — using gpt-5.4-mini as router, routing between gpt-4.1-mini and gpt-4.1 — achieved 73% accuracy while spending only half the cost of the large model standalone. It's the only optimization strategy in the study that wins a substantial region of the decision map, beating all six standalone models in the middle penalty range."
-
----
-
-### SLIDE 12 — OPTIMIZATION STRATEGY 3: SELF-CONSISTENCY (MODEST GAINS)
-**Duration:** ~1 minute
-
-**CHART: chartSC5_selfcons_accuracy_comparison.png** ← USE THIS ONE
-
-**Layout:**
-- Chart takes 70% of slide
-- Callout box with key trade-off
-
-**Custom mini-diagram (top left, small):**
-```
-Query → [Model] × 3 (parallel)
-         ↓
-    Majority Vote → Final Answer
-```
-
-**Callout box:**
-> ✔ gpt-4.1-mini N=3: +6.8 pp accuracy (27.8% → 44.0% on MMLU-Pro!)
-> ⚠ Cost: exactly 3× more expensive. Doesn't reach the next standalone tier (68.3%).
-
-**What to say:**
-- "Self-consistency samples the same model three times in parallel and takes the majority answer. It meaningfully improves accuracy — especially on hard multiple-choice benchmarks like MMLU-Pro, from 28% to 44%. The cost is exactly 3× and latency is only 1.07× (because calls are parallel). However, even with this improvement, it never closes the gap to the next standalone model tier."
+- "The router takes the most direct approach: an external model classifies each query before it's answered, and routes it to either a cheap or a strong model based on predicted difficulty. Unlike the cascade, the router doesn't rely on the model's own confidence — it makes an independent decision. The best configuration — gpt-5.4-mini as router, routing between gpt-4.1-mini and gpt-4.1 — achieves 73% accuracy while spending only half the cost of the large model standalone. It's the only optimization in this study that wins a substantial region of the decision map at the default settings — the settings that reflect real enterprise deployments. This is the crescendo of the optimization story."
 
 ---
 
@@ -538,9 +595,9 @@ Color coding for cells:
 | 7     | Cost vs. Accuracy (chart3)         | 7:00–8:00 |
 | 8     | Economic Reward Rankings (chart4)  | 8:00–9:00 |
 | 9     | Decision Map (chart7)              | 9:00–10:00|
-| 10    | Cascade (chartC2)                  | 10:00–11:15|
-| 11    | Router (chartR3)                   | 11:15–12:45|
-| 12    | Self-Consistency (chartSC5)        | 12:45–13:45|
+| 10    | Cascade (fails — overconfidence)           | 10:00–11:15|
+| 11    | Self-Consistency (modest gains)            | 11:15–12:15|
+| 12    | Router — THE WINNER (climax)               | 12:15–13:45|
 | 13    | Cross-Strategy Summary Table       | 13:45–14:45|
 | 14    | Conclusions & RQ Answers           | 14:45–15:00 (tight — can trim slide 12 by 15s)|
 | 15    | Limitations & Thank You            | last ~30s  |
@@ -576,8 +633,8 @@ Color coding for cells:
 | 8     | Economic Reward: The Ranking Changes |
 | 9     | Which Model Wins — and When? |
 | 10    | Cascade: Blocked by Overconfidence |
-| 11    | Router: The Only Strategy That Wins |
-| 12    | Self-Consistency: Modest but Predictable Gains |
+| 11    | Self-Consistency: Modest but Predictable Gains |
+| 12    | Router: The Only Strategy That Wins (Climax) |
 | 13    | Head-to-Head: Best Configuration per Strategy |
 | 14    | Conclusions: Answering the Research Questions |
 | 15    | Limitations & Future Work |
