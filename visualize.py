@@ -2997,6 +2997,393 @@ def chart_r5_router_reward_vs_lambda_latency(router_data: dict, model_folders: d
 
 
 # ---------------------------------------------------------------------------
+# Unified strategy decision map: standalones + cascade + SC + router on one grid
+# ---------------------------------------------------------------------------
+def chart_unified_best_strategy_heatmap(model_folders: dict,
+                                        cascade_data: dict | None,
+                                        sc_data: dict | None,
+                                        router_data: dict | None):
+    """
+    Unified decision-map heatmap: each cell shows whichever option has the
+    highest macro-avg reward at those (lambda_error, lambda_latency) weights,
+    with the candidate set being ALL standalone models + ALL cascade configs
+    + ALL self-consistency configs + ALL router configs.
+
+    The legend only lists options that actually win at least one cell.
+    """
+    if not model_folders:
+        print("  Unified: no standalone models, skipping.")
+        return
+
+    standalone_models = sorted(model_folders.keys())
+
+    # ---- cascade configs ----
+    cascade_folders: dict[tuple, pathlib.Path] = {}
+    for folder in _find_cascade_folders():
+        parsed = _parse_cascade_name(folder.name)
+        if parsed is not None:
+            cascade_folders[parsed] = folder
+    cascade_configs = [
+        cfg for cfg in sorted(cascade_folders.keys())
+        if any(
+            r.get("escalated", False)
+            for stem in DATASETS
+            for r in _load_records(cascade_folders[cfg], stem)
+        )
+    ]
+
+    # ---- SC + router configs ----
+    sc_configs     = sorted((sc_data or {}).keys())
+    router_configs = sorted((router_data or {}).keys())
+
+    # ---- records ----
+    sa_records = {
+        m: {stem: _load_records(folder, stem) for stem in DATASETS}
+        for m, folder in model_folders.items()
+    }
+    cascade_records = {
+        cfg: {stem: _load_records(cascade_folders[cfg], stem) for stem in DATASETS}
+        for cfg in cascade_configs
+    }
+    sc_records = {
+        cfg: {stem: _load_records(_find_selfcons_folder(cfg), stem) for stem in DATASETS}
+        for cfg in sc_configs
+    }
+    sc_base_lats = {cfg: _base_avg_latency(cfg[0], model_folders) for cfg in sc_configs}
+    router_records = {
+        cfg: {stem: _load_records(_find_router_folder(cfg), stem) for stem in DATASETS}
+        for cfg in router_configs
+    }
+
+    # ---- colours per family ----
+    sa_colors = _model_color_map(standalone_models)
+    cascade_palette = [
+        "#B71C1C", "#D32F2F", "#EF5350",
+        "#BF360C", "#E64A19", "#FF7043",
+        "#4E342E", "#6D4C41", "#A1887F",
+        "#880E4F", "#C2185B", "#F06292",
+    ]
+    sc_palette     = ["#00695C", "#00ACC1"]
+    router_palette = ["#4527A0", "#00838F", "#AD1457", "#FFB300"]
+
+    cascade_colors = {cfg: cascade_palette[i % len(cascade_palette)]
+                      for i, cfg in enumerate(cascade_configs)}
+    sc_colors      = {cfg: sc_palette[i % len(sc_palette)]
+                      for i, cfg in enumerate(sc_configs)}
+    router_colors  = {cfg: router_palette[i % len(router_palette)]
+                      for i, cfg in enumerate(router_configs)}
+
+    # ---- build options ----
+    lam_errors = HEATMAP_LAM_ERROR
+    lam_lats   = HEATMAP_LAM_LAT
+
+    options_macro = []
+    for m in standalone_models:
+        s = _option_stats_macro(sa_records[m])
+        if s is not None:
+            options_macro.append((("standalone", m), *s))
+    for cfg in cascade_configs:
+        s = _option_stats_macro(cascade_records[cfg])
+        if s is not None:
+            options_macro.append((("cascade", cfg), *s))
+    for cfg in sc_configs:
+        s = _option_stats_macro_sc(sc_records[cfg], sc_base_lats[cfg])
+        if s is not None:
+            options_macro.append((("sc", cfg), *s))
+    for cfg in router_configs:
+        s = _option_stats_macro(router_records[cfg])
+        if s is not None:
+            options_macro.append((("router", cfg), *s))
+
+    if not options_macro:
+        print("  Unified: no options with data, skipping.")
+        return
+
+    grid = _build_best_grid(options_macro, lam_errors, lam_lats)
+
+    all_keys = (
+        [("standalone", m) for m in standalone_models] +
+        [("cascade", cfg) for cfg in cascade_configs] +
+        [("sc",      cfg) for cfg in sc_configs] +
+        [("router",  cfg) for cfg in router_configs]
+    )
+    key_to_color = {}
+    for k in all_keys:
+        fam, ident = k
+        if fam == "standalone":
+            key_to_color[k] = sa_colors[ident]
+        elif fam == "cascade":
+            key_to_color[k] = cascade_colors[ident]
+        elif fam == "sc":
+            key_to_color[k] = sc_colors[ident]
+        elif fam == "router":
+            key_to_color[k] = router_colors[ident]
+
+    # Restrict to keys that actually win at least one cell so the colormap is
+    # compact and the legend has no dead entries.
+    winning_set = {grid[i, j] for i in range(len(lam_lats))
+                   for j in range(len(lam_errors)) if grid[i, j] is not None}
+    winning_keys_ordered = [k for k in all_keys if k in winning_set]
+
+    key_to_idx = {k: idx for idx, k in enumerate(winning_keys_ordered)}
+    grid_int = np.array(
+        [[key_to_idx.get(grid[i, j], 0) for j in range(len(lam_errors))]
+         for i in range(len(lam_lats))],
+        dtype=float,
+    )
+    cmap = ListedColormap([key_to_color[k] for k in winning_keys_ordered])
+
+    fig, ax = plt.subplots(figsize=(15, 8))
+    ax.imshow(grid_int, aspect="auto", origin="lower", cmap=cmap,
+              vmin=-0.5, vmax=len(winning_keys_ordered) - 0.5,
+              interpolation="nearest")
+
+    x_ticks = np.linspace(0, len(lam_errors) - 1, 7, dtype=int)
+    y_ticks = np.linspace(0, len(lam_lats)   - 1, 7, dtype=int)
+    ax.set_xticks(x_ticks); ax.set_xticklabels([f"{lam_errors[t]:.2f}" for t in x_ticks])
+    ax.set_yticks(y_ticks); ax.set_yticklabels([f"{lam_lats[t]:.4f}"   for t in y_ticks])
+    ax.set_xlabel("λ_error  (error penalty weight)", fontsize=11)
+    ax.set_ylabel("λ_latency  (latency penalty weight)", fontsize=11)
+    ax.set_title(
+        "Unified Best-Option Decision Map: Standalones + Cascade + SC + Router\n"
+        "(cell colour = option with highest macro-avg reward)",
+        fontsize=12, fontweight="bold",
+    )
+
+    def_e = int(np.argmin(np.abs(lam_errors - LAMBDA_ERROR_DEFAULT)))
+    def_l = int(np.argmin(np.abs(lam_lats   - LAMBDA_LATENCY_DEFAULT)))
+    ax.plot(def_e, def_l, "w*", markersize=14,
+            label=f"default (λ_e={LAMBDA_ERROR_DEFAULT}, λ_l={LAMBDA_LATENCY_DEFAULT})")
+
+    # Build legend grouped by family, but only with winning keys.
+    def _label(k):
+        fam, ident = k
+        if fam == "standalone":
+            return ident
+        if fam == "cascade":
+            return f"Cascade {ident[0]} → {ident[1]}  (T={ident[2]})"
+        if fam == "sc":
+            return f"SC {ident[0]}  (N={ident[1]})"
+        if fam == "router":
+            return f"Router {ident[0]}  ({ident[1]} → {ident[2]})"
+        return str(ident)
+
+    legend_handles = []
+    for fam, header in (("standalone", "— Standalone models —"),
+                        ("cascade",    "— Cascade configs —"),
+                        ("sc",         "— Self-consistency configs —"),
+                        ("router",     "— Router configs —")):
+        fam_keys = [k for k in winning_keys_ordered if k[0] == fam]
+        if not fam_keys:
+            continue
+        legend_handles.append(mpatches.Patch(color="none", label=header))
+        for k in fam_keys:
+            legend_handles.append(mpatches.Patch(color=key_to_color[k],
+                                                 label=_label(k)))
+
+    ax.legend(handles=legend_handles, fontsize=9, framealpha=0.85,
+              title="Best option", title_fontsize=10,
+              loc="upper left", bbox_to_anchor=(1.01, 1), borderaxespad=0)
+
+    fig.tight_layout()
+    _save(fig, "chartUNI_unified_best_strategy_heatmap.png")
+
+
+def chart_unified_best_strategy_heatmap_per_dataset(model_folders: dict,
+                                                    cascade_data: dict | None,
+                                                    sc_data: dict | None,
+                                                    router_data: dict | None):
+    """
+    Per-dataset version of chartUNI: one subplot per benchmark with the same
+    candidate set as the macro chart (standalones + cascades + SC + routers).
+    Legend lists only options that win at least one cell anywhere in the grid
+    of subplots.
+    """
+    if not model_folders:
+        print("  Unified per-dataset: no standalone models, skipping.")
+        return
+
+    standalone_models = sorted(model_folders.keys())
+
+    cascade_folders: dict[tuple, pathlib.Path] = {}
+    for folder in _find_cascade_folders():
+        parsed = _parse_cascade_name(folder.name)
+        if parsed is not None:
+            cascade_folders[parsed] = folder
+    cascade_configs = [
+        cfg for cfg in sorted(cascade_folders.keys())
+        if any(
+            r.get("escalated", False)
+            for stem in DATASETS
+            for r in _load_records(cascade_folders[cfg], stem)
+        )
+    ]
+    sc_configs     = sorted((sc_data or {}).keys())
+    router_configs = sorted((router_data or {}).keys())
+
+    sa_records = {
+        m: {stem: _load_records(folder, stem) for stem in DATASETS}
+        for m, folder in model_folders.items()
+    }
+    cascade_records = {
+        cfg: {stem: _load_records(cascade_folders[cfg], stem) for stem in DATASETS}
+        for cfg in cascade_configs
+    }
+    sc_records = {
+        cfg: {stem: _load_records(_find_selfcons_folder(cfg), stem) for stem in DATASETS}
+        for cfg in sc_configs
+    }
+    sc_base_lats = {cfg: _base_avg_latency(cfg[0], model_folders) for cfg in sc_configs}
+    router_records = {
+        cfg: {stem: _load_records(_find_router_folder(cfg), stem) for stem in DATASETS}
+        for cfg in router_configs
+    }
+
+    sa_colors = _model_color_map(standalone_models)
+    cascade_palette = [
+        "#B71C1C", "#D32F2F", "#EF5350",
+        "#BF360C", "#E64A19", "#FF7043",
+        "#4E342E", "#6D4C41", "#A1887F",
+        "#880E4F", "#C2185B", "#F06292",
+    ]
+    sc_palette     = ["#00695C", "#00ACC1"]
+    router_palette = ["#4527A0", "#00838F", "#AD1457", "#FFB300"]
+
+    cascade_colors = {cfg: cascade_palette[i % len(cascade_palette)]
+                      for i, cfg in enumerate(cascade_configs)}
+    sc_colors      = {cfg: sc_palette[i % len(sc_palette)]
+                      for i, cfg in enumerate(sc_configs)}
+    router_colors  = {cfg: router_palette[i % len(router_palette)]
+                      for i, cfg in enumerate(router_configs)}
+
+    all_keys = (
+        [("standalone", m) for m in standalone_models] +
+        [("cascade", cfg) for cfg in cascade_configs] +
+        [("sc",      cfg) for cfg in sc_configs] +
+        [("router",  cfg) for cfg in router_configs]
+    )
+    key_to_color = {}
+    for k in all_keys:
+        fam, ident = k
+        if fam == "standalone":
+            key_to_color[k] = sa_colors[ident]
+        elif fam == "cascade":
+            key_to_color[k] = cascade_colors[ident]
+        elif fam == "sc":
+            key_to_color[k] = sc_colors[ident]
+        elif fam == "router":
+            key_to_color[k] = router_colors[ident]
+    key_to_idx = {k: i for i, k in enumerate(all_keys)}
+
+    lam_errors = HEATMAP_LAM_ERROR
+    lam_lats   = HEATMAP_LAM_LAT
+
+    ncols = 3
+    nrows = 2
+    fig, axes = plt.subplots(nrows, ncols, figsize=(18, 10), squeeze=False)
+    global_winning_keys: set = set()
+    grids_per_ds: dict[str, np.ndarray] = {}
+
+    for stem in DATASETS:
+        options_ds = []
+        for m in standalone_models:
+            s = _option_stats_single(sa_records[m][stem])
+            if s is not None:
+                options_ds.append((("standalone", m), *s))
+        for cfg in cascade_configs:
+            s = _option_stats_single(cascade_records[cfg][stem])
+            if s is not None:
+                options_ds.append((("cascade", cfg), *s))
+        for cfg in sc_configs:
+            base_lat = sc_base_lats.get(cfg, {}).get(stem)
+            s = _option_stats_single(sc_records[cfg][stem],
+                                     elapsed_override=base_lat)
+            if s is not None:
+                options_ds.append((("sc", cfg), *s))
+        for cfg in router_configs:
+            s = _option_stats_single(router_records[cfg][stem])
+            if s is not None:
+                options_ds.append((("router", cfg), *s))
+        grid = _build_best_grid(options_ds, lam_errors, lam_lats)
+        grids_per_ds[stem] = grid
+        global_winning_keys.update(k for k in grid.flat if k is not None)
+
+    cmap = ListedColormap([key_to_color[k] for k in all_keys])
+
+    for ds_idx, stem in enumerate(DATASETS):
+        row, col = divmod(ds_idx, ncols)
+        ax = axes[row][col]
+        grid = grids_per_ds[stem]
+        grid_int = np.array(
+            [[key_to_idx.get(grid[i, j], 0) for j in range(len(lam_errors))]
+             for i in range(len(lam_lats))],
+            dtype=float,
+        )
+        ax.imshow(grid_int, aspect="auto", origin="lower", cmap=cmap,
+                  vmin=-0.5, vmax=len(all_keys) - 0.5, interpolation="nearest")
+
+        x_ticks = np.linspace(0, len(lam_errors) - 1, 5, dtype=int)
+        y_ticks = np.linspace(0, len(lam_lats)   - 1, 5, dtype=int)
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels([f"{lam_errors[t]:.2f}" for t in x_ticks], fontsize=7)
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels([f"{lam_lats[t]:.4f}" for t in y_ticks], fontsize=7)
+        ax.set_title(DS_LABELS[stem], fontsize=10, fontweight="bold")
+        if col == 0:
+            ax.set_ylabel("λ_latency", fontsize=9)
+        if row == nrows - 1:
+            ax.set_xlabel("λ_error", fontsize=9)
+        def_e = int(np.argmin(np.abs(lam_errors - LAMBDA_ERROR_DEFAULT)))
+        def_l = int(np.argmin(np.abs(lam_lats   - LAMBDA_LATENCY_DEFAULT)))
+        ax.plot(def_e, def_l, "w*", markersize=10)
+
+    # Legend in the unused 6th cell
+    axes[1][2].set_visible(True)
+    axes[1][2].axis("off")
+
+    def _label(k):
+        fam, ident = k
+        if fam == "standalone":
+            return ident
+        if fam == "cascade":
+            return f"Cascade {ident[0]} → {ident[1]}  (T={ident[2]})"
+        if fam == "sc":
+            return f"SC {ident[0]}  (N={ident[1]})"
+        if fam == "router":
+            return f"Router {ident[0]}  ({ident[1]} → {ident[2]})"
+        return str(ident)
+
+    winning_ordered = [k for k in all_keys if k in global_winning_keys]
+    legend_handles = []
+    for fam, header in (("standalone", "— Standalone models —"),
+                        ("cascade",    "— Cascade configs —"),
+                        ("sc",         "— Self-consistency configs —"),
+                        ("router",     "— Router configs —")):
+        fam_keys = [k for k in winning_ordered if k[0] == fam]
+        if not fam_keys:
+            continue
+        legend_handles.append(mpatches.Patch(color="none", label=header))
+        for k in fam_keys:
+            legend_handles.append(mpatches.Patch(color=key_to_color[k],
+                                                 label=_label(k)))
+    legend_handles.append(
+        plt.Line2D([0], [0], marker="*", color="gray", linestyle="none",
+                   markersize=10,
+                   label=f"default (λe={LAMBDA_ERROR_DEFAULT}, λl={LAMBDA_LATENCY_DEFAULT})")
+    )
+    axes[1][2].legend(handles=legend_handles, loc="center", fontsize=8,
+                      framealpha=0.85, title="Best option", title_fontsize=9)
+
+    fig.suptitle(
+        "Unified Best-Option Decision Map — Per Dataset\n"
+        "Standalones + Cascade + SC + Router (cell colour = highest-reward option)",
+        fontsize=12, fontweight="bold",
+    )
+    fig.tight_layout()
+    _save(fig, "chartUNI_unified_best_strategy_heatmap_per_dataset.png")
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -3059,6 +3446,12 @@ if __name__ == "__main__":
         chart_r6_router_per_dataset_decision_map(router_data, model_folders)
     else:
         print("  No router results found. Run optimizer.py --router first.")
+
+    print("\nGenerating unified strategy decision map...")
+    chart_unified_best_strategy_heatmap(model_folders, cascade_data,
+                                        sc_data, router_data)
+    chart_unified_best_strategy_heatmap_per_dataset(model_folders, cascade_data,
+                                                    sc_data, router_data)
 
     print(f"\nAll charts saved to '{CHARTS_DIR}/'")
 

@@ -693,16 +693,16 @@ Table~\ref{tab:cascade_reward} shows the macro-average reward across cascade con
 
 \begin{table}[H]
 \centering
-\caption{Cascade reward per configuration at default weights.}
+\caption{Cascade reward per configuration at default weights, with standalone baselines.}
 \label{tab:cascade_reward}
-\begin{tabular}{cccc}
+\begin{tabular}{cccccc}
 \toprule
-Configuration & $T=60$ & $T=75$ & $T=90$ \\
+Configuration & $T=60$ & $T=75$ & $T=90$ & Small alone & Large alone \\
 \midrule
-gpt-4.1-mini $\rightarrow$ gpt-4.1 & $-$0.601 & $-$0.602 & $-$0.606 \\
-gpt-4.1-mini $\rightarrow$ gpt-5.4 & $-$0.601 & $-$0.601 & $-$0.601 \\
-gpt-5.4-mini $\rightarrow$ gpt-4.1 & $-$0.680 & $-$0.689 & $-$0.708 \\
-gpt-5.4-mini $\rightarrow$ gpt-5.4 & $-$0.680 & $-$0.680 & $-$0.681 \\
+gpt-4.1-mini $\rightarrow$ gpt-4.1 & $-$0.601 & $-$0.602 & $-$0.606 & $-$0.582 & $-$0.527 \\
+gpt-4.1-mini $\rightarrow$ gpt-5.4 & $-$0.601 & $-$0.601 & $-$0.601 & $-$0.582 & $-$0.444 \\
+gpt-5.4-mini $\rightarrow$ gpt-4.1 & $-$0.680 & $-$0.689 & $-$0.708 & $-$0.569 & $-$0.527 \\
+gpt-5.4-mini $\rightarrow$ gpt-5.4 & $-$0.680 & $-$0.680 & $-$0.681 & $-$0.569 & $-$0.444 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -725,14 +725,9 @@ The next two figures (Figure~\ref{fig:chartC4_cascade_reward_vs_lambda_error} an
 \label{fig:chartC5_cascade_reward_vs_lambda_latency}
 \end{figure}
 
-The cross-strategy decision map in Figure~\ref{fig:chartC3_cascade_best_config_heatmap} colors every cell of the ($\lambda_{e}$, $\lambda_{l}$) grid with the best option overall, where the candidate set includes the twelve cascade configurations and all six standalone models. The grid does not show any cascade cell, because the standalone model is always the macro-average winner. However, in the per-dataset version (Figure~\ref{fig:chartC6_cascade_per_dataset_decision_map}), this pattern does not hold. The gpt-4.1-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a broad upper-left region on MMLU-Pro, and the gpt-5.4-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a smaller upper-left section on GSM8K. The rest of the dataset results are still covered entirely by standalone models.
+wtf
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.9\textwidth]{charts/chartC3_cascade_best_config_heatmap.png}
-\caption{Cross-strategy decision map of cascades vs standalones (macro).}
-\label{fig:chartC3_cascade_best_config_heatmap}
-\end{figure}
+Although the macro-average decision map shows that no cascade configuration ever beats a standalone model overall, the per-dataset decision maps in Figure~\ref{fig:chartC6_cascade_per_dataset_decision_map} reveal isolated exceptions. The gpt-4.1-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a broad upper-left region on MMLU-Pro, and the gpt-5.4-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a smaller upper-left section on GSM8K. The rest of the dataset results are still covered entirely by standalone models.
 
 \begin{figure}[H]
 \centering
@@ -870,7 +865,7 @@ The sweep figures below (Figure~\ref{fig:chartR4_router_reward_vs_lambda_error} 
 \label{fig:chartR5_router_reward_vs_lambda_latency}
 \end{figure}
 
-The cross-strategy decision map in Figure~\ref{fig:chartR3_router_best_config_heatmap} places the four router configurations and the six standalone models on the same ($\lambda_{e}$, $\lambda_{l}$) grid and colors each cell by the macro-average winner. Unlike the cascade case (Section~\ref{subsec:cascade_reward}), the rtr=gpt-5.4-mini, gpt-4.1-mini $\rightarrow$ gpt-4.1 router configuration does win a substantial region of the grid. This router configuration occupies a broad diagonal band that separates the gpt-4.1-mini area in the upper-left from the gpt-5.4 area in the lower-right. This is the first and only optimization configuration in the study that defeats every standalone model in part of the penalty space. The remaining three router configurations do not win any cell on the macro grid. The per-dataset version (Figure~\ref{fig:chartR6_router_per_dataset_decision_map}) repeats the construction per benchmark.
+The cross-strategy decision map in Figure~\ref{fig:chartR3_router_best_config_heatmap} places the four router configurations and the six standalone models on the same ($\lambda_{e}$, $\lambda_{l}$) grid and colors each cell by the macro-average winner. Unlike the cascade case (Section~\ref{subsec:cascade_reward}), the rtr=gpt-5.4-mini, gpt-4.1-mini $\rightarrow$ gpt-4.1 router configuration does win a substantial region of the grid. This router configuration occupies a broad diagonal band that separates the gpt-4.1-mini area in the upper-left from the gpt-5.4 area in the lower-right. This is the first optimization configuration in the study that defeats every standalone model in part of the penalty space. The remaining three router configurations do not win any cell on the macro grid. The per-dataset version (Figure~\ref{fig:chartR6_router_per_dataset_decision_map}) repeats the construction per benchmark.
 
 \begin{figure}[H]
 \centering
@@ -1094,11 +1089,11 @@ Therefore, reasoning models justify their additional cost and latency only when 
 
 \section{Effectiveness of Proxy-Based Optimization} \label{sec:disc_proxy}
 
-The proxy-style optimization layer (cascade, router, self-consistency) implemented in this study can improve cost-efficiency, but the three strategies differ sharply, and only one of them defeats every standalone model on a substantial region of the ($\lambda_{e}$, $\lambda_{l}$) decision map.
+The proxy-style optimization layer (cascade, router, self-consistency) implemented in this study can improve cost-efficiency, but the three strategies differ sharply, and only two of them (router and self-consistency) defeat every standalone model on a substantial region of the ($\lambda_{e}$, $\lambda_{l}$) decision map.
 
 Cascade is effectively suppressed by the overconfidence exhibited by LLMs. As modern LLMs tend to return high confidence values, the smaller model escalates no more than 1.1\% of queries at $T=60/75$ and 7.3\% at most at $T=90$ across all twelve configurations. This same calibration issue is also documented in the LLM evaluation literature \citep{a_systematic_survey_and_critival_review}. As a consequence, every cascade behaves like its small model, and none of them wins any cell of the macro decision map. Cascades only emerge as winners in narrow per-dataset regions on MMLU-Pro and GSM8K (Figure~\ref{fig:chartC6_cascade_per_dataset_decision_map}). The threshold parameter effectively has no effect under the current calibration.
 
-Routing yields the best optimization result. Because decisions are made by an external classifier rather than using the model's confidence, escalation rates increase in the routing strategy. The gpt-5.4-mini router escalates $\sim$25\% of requests, with $\sim$42\% of escalations occurring in GPQA, $\sim$37\% in MMLU-Pro, and approximately 22 to 26\% in GSM8K. This leads to an increase in the macro accuracy around $+$15.5 to $+$16.4 pp relative to a small baseline. Macro-accuracy reaches its maximum at 77.0\% with gpt-5.4 as the large worker. Its gpt-4.1-mini / gpt-4.1 configuration sets the study's best reward ($-$0.498), beating the gpt-4.1-mini ($-$0.582), gpt-5.4-mini ($-$0.569), and gpt-4.1 ($-$0.527) standalones, and is the only configuration that wins a substantial region of the macro decision map (Figure~\ref{fig:chartR3_router_best_config_heatmap}, the diagonal band between the gpt-4.1-mini and gpt-5.4 areas). Router quality has a greater impact than worker quality, such that, while workers remain unchanged, replacing the gpt-4.1-mini router with the gpt-5.4-mini increases accuracy by approximately 14.9 percentage points.
+Routing yields the best optimization-layer reward at the default weights. Because decisions are made by an external classifier rather than using the model's confidence, escalation rates increase in the routing strategy. The gpt-5.4-mini router escalates $\sim$25\% of requests, with $\sim$42\% of escalations occurring in GPQA, $\sim$37\% in MMLU-Pro, and approximately 22 to 26\% in GSM8K. This leads to an increase in the macro accuracy around $+$15.5 to $+$16.4 pp relative to a small baseline. Macro-accuracy reaches its maximum at 77.0\% with gpt-5.4 as the large worker. Its gpt-4.1-mini / gpt-4.1 configuration sets the study's best reward ($-$0.498), beating the gpt-4.1-mini ($-$0.582), gpt-5.4-mini ($-$0.569), and gpt-4.1 ($-$0.527) standalones, and wins a diagonal band of the router-vs-standalones macro decision map (Figure~\ref{fig:chartR3_router_best_config_heatmap}). Router quality has a greater impact than worker quality, such that, while workers remain unchanged, replacing the gpt-4.1-mini router with the gpt-5.4-mini increases accuracy by approximately 14.9 percentage points.
 
 Self-consistency gives a modest reward gain. Choosing the majority answer across three votes increases gpt-4.1-mini by 6.8 percentage points (from 57.6\% to 64.4\%) and gpt-5.4-mini by 2.6 points (from 60.6\% to 63.2\%) while being 3 times more costly and with only about a 1.07$\times$ slower latency (17.4 to 18.6 s; 18.4 to 19.7 s) through parallel execution. gpt-4.1-mini $N=3$ reaches $-$0.543 and dominates the upper-left of Figure~\ref{fig:chartSC3_selfcons_best_config_heatmap} while getting most of the gain on MMLU-Pro and GPQA. However, still self-consistency does not close the gap to gpt-4.1 standalone (64.4\% vs.\ 68.3\%).
 
@@ -1124,7 +1119,8 @@ There are a number of practical implications of these results. First of all, whe
 
 This thesis approaches model selection from a different perspective. To fold accuracy, latency, and cost into a single scalar, a composite, reward-based economic model has been introduced, and the trade-offs between them are illustrated by computing the reward under different $\lambda_{e}$ and $\lambda_{l}$ parameters. Through applying this model, six Azure-hosted models across the 4.1 and 5.4 generations, the mini/full/pro tiers, and the standard and reasoning versions were compared on five benchmarks under identical conditions.
 
-Further, cascade, router, and self-consistency techniques are evaluated within the same framework. Results reveal that only the learned routing method outperforms a standalone model, while LLM overconfidence neutralizes the effectiveness of the confidence-based cascading approach. Finally, the thesis addresses several cloud-specific constraints, namely throttling, quota-driven latency outliers, and the divergence between mean and median latency, which are decisive in real deployments but usually absent from academic evaluations.
+wtf
+Further, cascade, router, and self-consistency techniques are evaluated within the same framework. Results reveal that the learned routing method achieves the best optimization-layer reward at the default weights and outperforms every standalone in a diagonal band of the ($\lambda_{e}$, $\lambda_{l}$) plane, while parallel self-consistency dominates the high-latency-penalty region; the confidence-based cascading approach, by contrast, is neutralized by LLM overconfidence. Finally, the thesis addresses several cloud-specific constraints, namely throttling, quota-driven latency outliers, and the divergence between mean and median latency, which are decisive in real deployments but usually absent from academic evaluations.
 
 \chapter{Conclusion, Limitations, and Future Work} \label{ch:conclusion}
 
@@ -1132,7 +1128,8 @@ Further, cascade, router, and self-consistency techniques are evaluated within t
 
 Through covering six Azure-hosted models, five datasets, and three optimization strategies, the empirical study of the thesis confirms that for enterprise deployments, LLM selection cannot be reduced to a single accuracy metric. Standalone evaluation shows that accuracy and cost do not align with a smooth frontier. Rather, they are divided into two distinct tiers, such that a 36 pp increase in macro accuracy corresponds to a three-order-of-magnitude difference in cost. After applying the economic reward function defined in Chapter~\ref{ch:methodology} with latency and cost values and calculating the reward, the model with the highest accuracy does not become the most favorable choice anymore and instead, gpt-5.4 emerges as the most balanced choice for general tasks.
 
-The optimization techniques behave very differently from one another. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. Even though self-consistency does not reach the next stronger standalone model, it offers a modest, predictable accuracy lift for cheap workers when $N$ samples can be dispatched in parallel. Only the routing strategy beats every standalone model in a substantial region of the ($\lambda_{e}$, $\lambda_{l}$) plane, and the router's quality dominates that of its workers. These results suggest that the benefit of an optimization layer in production depends much more on calibration and routing quality than on the intrinsic appeal of the strategy. Lastly, reasoning-enabled inference is best suited for accuracy-critical, latency-tolerant tasks rather than as a default approach.
+wtf
+The optimization techniques behave very differently from one another. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. Even though self-consistency does not reach the next stronger standalone model, it offers a modest, predictable accuracy lift for cheap workers when $N$ samples can be dispatched in parallel. Both the routing strategy and parallel self-consistency beat every standalone model in substantial but disjoint regions of the ($\lambda_{e}$, $\lambda_{l}$) plane (router along a diagonal band, self-consistency in the high-latency-penalty area), and for routing the router's quality dominates that of its workers. These results suggest that the benefit of an optimization layer in production depends much more on calibration and routing quality than on the intrinsic appeal of the strategy. Lastly, reasoning-enabled inference is best suited for accuracy-critical, latency-tolerant tasks rather than as a default approach.
 
 \section{Limitations} \label{sec:conclusion_limitations}
 

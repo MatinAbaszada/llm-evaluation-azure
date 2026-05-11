@@ -196,7 +196,7 @@ def add_white_background(slide):
     return bg
 
 
-def add_header(slide, title_text, slide_num=None, total=15, section_label=None):
+def add_header(slide, title_text, slide_num=None, total=16, section_label=None):
     header_shapes = []
     bar = add_filled_rect(slide, 0, 0, SLIDE_W, HEADER_H, NAVY)
     accent = add_filled_rect(slide, 0, HEADER_H, SLIDE_W, Inches(0.06), AZURE)
@@ -234,9 +234,11 @@ def add_callout(slide, left, top, width, height, text, *,
     tf.vertical_anchor = MSO_ANCHOR.MIDDLE
     tf.margin_left = Inches(0.05)
     tf.margin_right = Inches(0.05)
-    p = tf.paragraphs[0]
-    p.alignment = align
-    set_run(p.add_run(), text, size=size, bold=bold, color=text_color)
+    lines = text.split("\n")
+    for li, line in enumerate(lines):
+        p = tf.paragraphs[0] if li == 0 else tf.add_paragraph()
+        p.alignment = align
+        set_run(p.add_run(), line, size=size, bold=bold, color=text_color)
     return [box, bar, tb]
 
 
@@ -488,8 +490,28 @@ def slide_title(prs, logo_path):
 
     if logo_path and Path(logo_path).exists():
         try:
-            logo_shape = s.shapes.add_picture(str(logo_path), Inches(0.5),
-                                              Inches(0.4), height=Inches(0.9))
+            # White rounded plate behind the logo so the dark-navy wordmark
+            # ("CONSTRUCTOR UNIVERSITY") stays readable on the navy header.
+            from PIL import Image as _PILImage
+            with _PILImage.open(str(logo_path)) as _im:
+                _iw, _ih = _im.size
+            logo_h = Inches(0.9)
+            logo_w = int(logo_h * (_iw / _ih))
+            logo_x, logo_y = Inches(0.5), Inches(0.4)
+            pad_x, pad_y = Inches(0.18), Inches(0.12)
+            plate = s.shapes.add_shape(
+                MSO_SHAPE.ROUNDED_RECTANGLE,
+                logo_x - pad_x, logo_y - pad_y,
+                logo_w + 2 * pad_x, logo_h + 2 * pad_y,
+            )
+            plate.fill.solid()
+            plate.fill.fore_color.rgb = WHITE
+            plate.line.color.rgb = WHITE
+            plate.shadow.inherit = False
+            register_always_visible(s, plate)
+
+            logo_shape = s.shapes.add_picture(str(logo_path), logo_x,
+                                              logo_y, height=logo_h)
             register_always_visible(s, logo_shape)
             print(f"[info] Logo embedded on title slide ({Path(logo_path).name})")
         except Exception as e:
@@ -547,7 +569,7 @@ def slide_motivation(prs):
     callout_shapes = add_callout(
         s, Inches(0.4), Inches(4.7), Inches(12.5), Inches(1.95),
         "In the cloud, “best model” ≠ “strongest model”.\n"
-        "A model at 93% accuracy that costs 770× more per request "
+        "A top-accuracy model that costs ~20× more per request than the next-best "
         "may be the wrong enterprise choice.\n"
         "Accuracy, cost, and latency must all be evaluated together.",
         fill=AMBER_FILL, border=AMBER, size=16, bold=False)
@@ -618,7 +640,9 @@ def slide_design(prs):
          "gpt-4.1-mini · gpt-5.4-mini    |    gpt-4.1 · gpt-5.4    |    "
          "o3-mini · gpt-5.4-pro  (reasoning)"),
         ("5 Benchmark Datasets",
-         "HumanEval · MBPP · MMLU-Pro · GPQA · GSM8K"),
+         "HumanEval (Python coding) · MBPP (Python coding) · "
+         "MMLU-Pro (multi-subject multiple-choice) · "
+         "GPQA (graduate-level science Q&A) · GSM8K (grade-school math word problems)"),
         ("Evaluated Under 4 Strategies",
          "Standalone  ·  Cascade  ·  Router  ·  Self-Consistency"),
     ]
@@ -759,7 +783,7 @@ def slide_chart(prs, title, slide_num, section, chart_file,
 
 def slide_cascade(prs):
     s = blank_slide(prs)
-    add_header(s, "Cascade: Blocked by Overconfidence",
+    add_header(s, "Cascade: Why not ask the small model first and only escalate when needed?",
                slide_num=10, section_label="OPTIMIZATION  •  1 / 3")
 
     lx, lw = Inches(0.4), Inches(4.5)
@@ -793,9 +817,119 @@ def slide_cascade(prs):
                        "Large Model (final answer)", color=ORANGE_RED)
     register_group(s, yes_t, no_t, *n4)
 
-    pic = add_picture_fitted(s, CHARTS / "chartC2_cascade_dual_heatmap.png",
-                             Inches(5.1), Inches(1.25), Inches(8.0), Inches(4.7))
-    register_group(s, pic)
+    # --- Table 7: Cascade reward per configuration with standalone baselines
+    # Header bar ends at y=1.01"; bottom amber callout starts at y=6.15".
+    # Available vertical span = 5.14".  Center a (table+caption) block of
+    # ~3.05" height inside it: top = 1.01 + (5.14 - 3.05)/2 ~= 2.06"
+    tbl_left, tbl_top = Inches(5.45), Inches(2.05)
+    tbl_w = Inches(7.45)
+    headers = ["Configuration", "T=60", "T=75", "T=90",
+               "Small alone", "Large alone"]
+    rows = [
+        ("gpt-4.1-mini → gpt-4.1", "−0.601", "−0.602", "−0.606",
+         "−0.582", "−0.527"),
+        ("gpt-4.1-mini → gpt-5.4", "−0.601", "−0.601", "−0.601",
+         "−0.582", "−0.444"),
+        ("gpt-5.4-mini → gpt-4.1", "−0.680", "−0.689", "−0.708",
+         "−0.569", "−0.527"),
+        ("gpt-5.4-mini → gpt-5.4", "−0.680", "−0.680", "−0.681",
+         "−0.569", "−0.444"),
+    ]
+    # Best (least-negative reward = lowest penalty) cell in each data row.
+    # All four rows have "Large alone" (column 5) as the maximum.
+    best_cells = {(ri + 1, 5) for ri in range(len(rows))}
+
+    n_rows, n_cols = len(rows) + 1, len(headers)
+    # Row heights: header slightly larger; data rows uniform.
+    row_heights = [Inches(0.45)] + [Inches(0.50)] * len(rows)
+    tbl_h = sum(row_heights, Inches(0))
+    table_shape = s.shapes.add_table(n_rows, n_cols, tbl_left, tbl_top,
+                                     tbl_w, tbl_h)
+    table = table_shape.table
+
+    # --- Strip default table style so our cell fills/borders are not overridden
+    tbl_el = table._tbl
+    tblPr = tbl_el.find(qn("a:tblPr"))
+    if tblPr is not None:
+        tblPr.set("firstRow", "0")
+        tblPr.set("bandRow", "0")
+        tblPr.set("firstCol", "0")
+        for tsid in tblPr.findall(qn("a:tableStyleId")):
+            tblPr.remove(tsid)
+
+    col_w = [Inches(2.30), Inches(0.78), Inches(0.78), Inches(0.78),
+             Inches(1.40), Inches(1.41)]
+    for ci, w in enumerate(col_w):
+        try:
+            table.columns[ci].width = w
+        except Exception:
+            pass
+    for ri, h in enumerate(row_heights):
+        try:
+            table.rows[ri].height = h
+        except Exception:
+            pass
+
+    def _set_cell_borders(cell, color_hex, w_emu="12700"):
+        """Set all four borders of a table cell to a solid color (RGB hex)."""
+        tcPr = cell._tc.get_or_add_tcPr()
+        for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+            for el in tcPr.findall(qn(tag)):
+                tcPr.remove(el)
+        for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+            ln = etree.SubElement(tcPr, qn(tag))
+            ln.set("w", w_emu)
+            ln.set("cap", "flat")
+            ln.set("cmpd", "sng")
+            ln.set("algn", "ctr")
+            fill = etree.SubElement(ln, qn("a:solidFill"))
+            clr = etree.SubElement(fill, qn("a:srgbClr"))
+            clr.set("val", color_hex)
+            etree.SubElement(ln, qn("a:prstDash")).set("val", "solid")
+            etree.SubElement(ln, qn("a:round"))
+
+    border_hex = "{:02X}{:02X}{:02X}".format(NAVY[0], NAVY[1], NAVY[2])
+
+    for ci, h in enumerate(headers):
+        cell = table.cell(0, ci)
+        cell.fill.solid(); cell.fill.fore_color.rgb = NAVY
+        cell.margin_left = Inches(0.03); cell.margin_right = Inches(0.03)
+        cell.margin_top = Inches(0.02); cell.margin_bottom = Inches(0.02)
+        cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+        _set_cell_borders(cell, border_hex)
+        tf = cell.text_frame; tf.word_wrap = True
+        p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER; p.text = ""
+        set_run(p.add_run(), h, size=11, bold=True, color=WHITE)
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            cell = table.cell(ri + 1, ci)
+            cell.margin_left = Inches(0.03); cell.margin_right = Inches(0.03)
+            cell.margin_top = Inches(0.02); cell.margin_bottom = Inches(0.02)
+            cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+            cell.fill.solid()
+            if (ri + 1, ci) in best_cells:
+                cell.fill.fore_color.rgb = GREEN_FILL
+            else:
+                cell.fill.fore_color.rgb = WHITE if ri % 2 == 0 else ALT_ROW
+            _set_cell_borders(cell, border_hex)
+            tf = cell.text_frame; tf.word_wrap = True
+            p = tf.paragraphs[0]
+            p.alignment = PP_ALIGN.CENTER
+            p.text = ""
+            bold = (ci == 0) or ((ri + 1, ci) in best_cells)
+            color = GREEN if (ri + 1, ci) in best_cells else NEAR_BLACK
+            set_run(p.add_run(), val, size=11, bold=bold, color=color)
+    register_group(s, table_shape)
+
+    # Caption directly below the table.
+    cap_top = tbl_top + tbl_h + Inches(0.06)
+    cap = add_textbox(s, tbl_left, cap_top, tbl_w, Inches(0.3),
+                      "Table 7: Cascade reward at default weights "
+                      "(λ_l = 0.01, λ_e = 1.0).  No cascade beats its "
+                      "large-alone baseline.",
+                      size=10, italic=True, color=GRAY,
+                      align=PP_ALIGN.CENTER)
+    register_group(s, cap)
 
     callout_shapes = add_callout(
         s, Inches(0.6), Inches(6.15), Inches(12.4), Inches(0.85),
@@ -808,7 +942,7 @@ def slide_cascade(prs):
 
 def slide_self_consistency(prs):
     s = blank_slide(prs)
-    add_header(s, "Self-Consistency: Modest but Predictable Gains",
+    add_header(s, "Self-Consistency: Why not let the small model double-check its own answer?",
                slide_num=11, section_label="OPTIMIZATION  •  2 / 3")
 
     lx, lw = Inches(0.4), Inches(4.4)
@@ -823,12 +957,17 @@ def slide_self_consistency(prs):
 
     py = by + Inches(0.95)
     parallel_shapes = []
+    run_arrows = []
     for i in range(3):
         x = lx + Inches(0.3) + i * Inches(1.25)
+        run_arrows.append(
+            add_arrow_down(s, x + Inches(0.5), py - Inches(0.3),
+                           w=Inches(0.15), h=Inches(0.25))
+        )
         node = add_diag_node(s, x, py, Inches(1.15), Inches(0.5),
                              f"Run {i+1}", size=12)
         parallel_shapes.extend(node)
-    register_group(s, *parallel_shapes)
+    register_group(s, *run_arrows, *parallel_shapes)
 
     arr = add_arrow_down(s, lx + lw / 2 - Inches(0.15), py + Inches(0.6))
     mv_y = py + Inches(0.95)
@@ -837,12 +976,12 @@ def slide_self_consistency(prs):
                        color=GREEN, fill=GREEN_FILL)
     register_group(s, arr, *mv)
 
-    cs = add_callout(s, lx, Inches(4.4), lw + Inches(0.05), Inches(2.0),
-                     "✔  gpt-4.1-mini N=3:  +6.8 pp accuracy.\n"
-                     "    MMLU-Pro: 27.8% → 44.0%.\n\n"
-                     "⚠  Cost = exactly 3×.\n"
-                     "    Latency only +7% (parallel).\n"
-                     "    Still below the next standalone tier (68.3%).",
+    cs = add_callout(s, lx, Inches(4.7), lw + Inches(0.05), Inches(2.0),
+                     "gpt-4.1-mini N=3:  +6.8 pp accuracy.\n"
+                     "MMLU-Pro: 27.8% → 44.0%.\n\n"
+                     "Modest gain: cost = exactly 3×,\n"
+                     "and accuracy stays below the next\n"
+                     "standalone tier (68.3%).",
                      size=13, bold=False)
     register_group(s, *cs)
 
@@ -854,7 +993,7 @@ def slide_self_consistency(prs):
 
 def slide_router(prs):
     s = blank_slide(prs)
-    add_header(s, "Router: The Only Strategy That Wins (Climax)",
+    add_header(s, "Router: Why not let an intelligent LLM decide which model to use?",
                slide_num=12, section_label="OPTIMIZATION  •  3 / 3")
 
     lx, lw = Inches(0.4), Inches(4.5)
@@ -883,11 +1022,10 @@ def slide_router(prs):
     register_group(s, arr2, *easy, *hard)
 
     cs = add_callout(s, lx, Inches(4.55), lw + Inches(0.05), Inches(2.05),
-                     "✔  +15.5 pp accuracy over small baseline\n"
-                     "    at 16× lower cost than gpt-5.4.\n\n"
-                     "Reward = −0.498  (beats gpt-4.1 at −0.527).\n\n"
-                     "The ONLY optimization that wins a region\n"
-                     "of the macro decision map.",
+                     "Accuracy clearly above the small baseline, at a fraction\n"
+                     "of the cost of the large model.\n\n"
+                     "Trade-off: latency stays close to the large model,\n"
+                     "because every query first passes through the router.",
                      fill=GREEN_FILL, border=GREEN, size=12, bold=False)
     register_group(s, *cs)
 
@@ -913,9 +1051,14 @@ def slide_summary_table(prs):
          "57.7%", "17.7 s", "0.261", "−0.601"),
     ]
     highlights = {
-        (0, 5): GREEN, (3, 5): ORANGE_RED,
+        # Accuracy (col 2): best Standalone 90.8%, worst Cascade 57.7%
+        (0, 2): GREEN, (3, 2): ORANGE_RED,
+        # Latency (col 3): best Cascade 17.7s, worst Standalone 34.7s
+        (3, 3): GREEN, (0, 3): ORANGE_RED,
+        # Cost (col 4): best Cascade 0.261, worst Standalone 5.370
         (3, 4): GREEN, (0, 4): ORANGE_RED,
-        (0, 2): GREEN,
+        # Reward (col 5): best Standalone -0.444, worst Cascade -0.601
+        (0, 5): GREEN, (3, 5): ORANGE_RED,
     }
 
     n_rows = len(rows) + 1; n_cols = len(headers)
@@ -924,6 +1067,33 @@ def slide_summary_table(prs):
 
     table_shape = s.shapes.add_table(n_rows, n_cols, left, top, width, height)
     table = table_shape.table
+
+    # Strip default table style so cell borders/fills are not overridden
+    tbl_el = table._tbl
+    tblPr = tbl_el.find(qn("a:tblPr"))
+    if tblPr is not None:
+        tblPr.set("firstRow", "0")
+        tblPr.set("bandRow", "0")
+        tblPr.set("firstCol", "0")
+        for tsid in tblPr.findall(qn("a:tableStyleId")):
+            tblPr.remove(tsid)
+
+    border_hex = "{:02X}{:02X}{:02X}".format(NAVY[0], NAVY[1], NAVY[2])
+
+    def _set_cell_borders(cell, color_hex, w_emu="12700"):
+        tcPr = cell._tc.get_or_add_tcPr()
+        for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+            for el in tcPr.findall(qn(tag)):
+                tcPr.remove(el)
+        for tag in ("a:lnL", "a:lnR", "a:lnT", "a:lnB"):
+            ln = etree.SubElement(tcPr, qn(tag))
+            ln.set("w", w_emu); ln.set("cap", "flat")
+            ln.set("cmpd", "sng"); ln.set("algn", "ctr")
+            fill = etree.SubElement(ln, qn("a:solidFill"))
+            clr = etree.SubElement(fill, qn("a:srgbClr"))
+            clr.set("val", color_hex)
+            etree.SubElement(ln, qn("a:prstDash")).set("val", "solid")
+            etree.SubElement(ln, qn("a:round"))
 
     col_w = [Inches(1.5), Inches(4.4), Inches(1.4), Inches(1.4),
              Inches(1.6), Inches(1.6)]
@@ -939,6 +1109,7 @@ def slide_summary_table(prs):
         cell.margin_left = Inches(0.08); cell.margin_right = Inches(0.08)
         cell.margin_top = Inches(0.05); cell.margin_bottom = Inches(0.05)
         cell.vertical_anchor = MSO_ANCHOR.MIDDLE
+        _set_cell_borders(cell, border_hex)
         tf = cell.text_frame; tf.word_wrap = True
         p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER; p.text = ""
         set_run(p.add_run(), h, size=14, bold=True, color=WHITE)
@@ -959,6 +1130,7 @@ def slide_summary_table(prs):
                 cell.fill.fore_color.rgb = ICE_BLUE
             else:
                 cell.fill.fore_color.rgb = WHITE if ri % 2 == 0 else ALT_ROW
+            _set_cell_borders(cell, border_hex)
             tf = cell.text_frame; tf.word_wrap = True
             p = tf.paragraphs[0]
             p.alignment = PP_ALIGN.CENTER if ci != 1 else PP_ALIGN.LEFT
@@ -978,23 +1150,49 @@ def slide_summary_table(prs):
     register_group(s, note)
 
     cs = add_callout(s, Inches(0.5), Inches(5.4), Inches(12.3), Inches(1.4),
-                     "Only the Router beats all six standalone models on a "
-                     "substantial region of the decision map.",
+                     "•  At default weights, the best reward belongs to a standalone model.\n"
+                     "•  This ordering changes as the latency and error penalty weights are varied, as the next slide shows.",
                      size=15, bold=True)
     register_group(s, *cs)
+    return s
+
+
+def slide_unified_heatmap(prs):
+    s = blank_slide(prs)
+    add_header(s, "Best Model & Optimization Strategy Across the Penalty Plane",
+               slide_num=14, section_label="RESULTS")
+
+    pic = add_picture_fitted(s, CHARTS / "chartUNI_unified_best_strategy_heatmap_router_diagonal.png",
+                             Inches(0.4), Inches(1.25),
+                             Inches(8.9), Inches(5.7))
+    register_group(s, pic)
+
+    sx, sy, sw = Inches(9.4), Inches(1.3), Inches(3.7)
+    head = add_textbox(s, sx, sy, sw, Inches(0.5),
+                       "Who wins each cell",
+                       size=16, bold=True, color=NAVY)
+    rule = add_filled_rect(s, sx, sy + Inches(0.55),
+                           Inches(1.2), Inches(0.04), AZURE)
+    bullets = add_bullet_list(s, sx, sy + Inches(0.7), sw, Inches(3.3), [
+        "SC gpt-4.1-mini (N=3): removes noise from a cheap and fast model, but accuracy still trails the standalone models",
+        "gpt-5.4: slower than SC, but reaches higher accuracy (fewer errors) — ★ default sits here",
+        "gpt-5.4-pro: highest accuracy of all, wins where error penalty is high and latency penalty is low",
+        "Router: accurate at a much lower cost than the large models, but latency stays high",
+    ], size=13)
+    register_group(s, head, rule, bullets)
     return s
 
 
 def slide_conclusions(prs):
     s = blank_slide(prs)
     add_header(s, "Conclusions: Answering the Research Questions",
-               slide_num=14, section_label="CONCLUSIONS")
+               slide_num=15, section_label="CONCLUSIONS")
 
     items = [
         ("RQ 1",
          "How do Azure LLMs differ in accuracy, latency, and cost?",
-         "Two-tier structure: 15 pp accuracy gap, 770× cost gap.  "
-         "No model Pareto-dominates.  gpt-5.4 = best balanced choice at default weights.",
+         "Two-tier structure: 15 pp accuracy gap and ≈7× cost gap at the tier boundary "
+         "(o3-mini vs gpt-4.1).  No model Pareto-dominates.  gpt-5.4 = best balanced choice at default weights.",
          AZURE),
         ("RQ 2",
          "Is reasoning-enabled inference economically justified?",
@@ -1003,9 +1201,9 @@ def slide_conclusions(prs):
          AMBER),
         ("RQ 3",
          "Can proxy optimization improve cost-efficiency?",
-         "Router: YES. Wins a diagonal band in the decision map.   "
-         "Self-Consistency: partially. Modest accuracy at 3× cost.   "
-         "Cascade: NO. Neutralized by LLM overconfidence.",
+         "•  Cascade fails to optimize because neutralized by LLM overconfidence.\n"
+         "•  Self-Consistency optimizes the cheap/fast regime by reducing noise.\n"
+         "•  Router optimizes the accuracy-vs-cost trade-off, winning a band of the decision map.",
          GREEN),
     ]
 
@@ -1022,9 +1220,15 @@ def slide_conclusions(prs):
         q_tb = add_textbox(s, Inches(2.05), y + Inches(0.12),
                            Inches(10.7), Inches(0.55), q,
                            size=15, bold=True, color=NAVY)
-        a_tb = add_textbox(s, Inches(2.05), y + Inches(0.65),
-                           Inches(10.7), h - Inches(0.7), a,
-                           size=14, color=NEAR_BLACK)
+        a_tb = s.shapes.add_textbox(Inches(2.05), y + Inches(0.65),
+                                    Inches(10.7), h - Inches(0.7))
+        a_tf = a_tb.text_frame
+        a_tf.word_wrap = True
+        a_tf.vertical_anchor = MSO_ANCHOR.TOP
+        for li, line in enumerate(a.split("\n")):
+            p_a = a_tf.paragraphs[0] if li == 0 else a_tf.add_paragraph()
+            p_a.alignment = PP_ALIGN.LEFT
+            set_run(p_a.add_run(), line, size=14, color=NEAR_BLACK)
         register_group(s, tag_bg, tb, body_bg, q_tb, a_tb)
     return s
 
@@ -1032,7 +1236,7 @@ def slide_conclusions(prs):
 def slide_limits(prs):
     s = blank_slide(prs)
     add_header(s, "Limitations & Future Work",
-               slide_num=15, section_label="CONCLUSIONS")
+               slide_num=17, section_label="CONCLUSIONS")
 
     col_w = Inches(6.0); top = Inches(1.3)
 
@@ -1081,6 +1285,38 @@ def slide_limits(prs):
     return s
 
 
+def slide_thanks(prs):
+    s = blank_slide(prs)
+    navy_bg = add_filled_rect(s, 0, 0, SLIDE_W, SLIDE_H, NAVY)
+    register_always_visible(s, navy_bg)
+
+    thanks = add_textbox(s, Inches(0.7), Inches(2.0), Inches(11.9), Inches(1.6),
+                         "Thank You",
+                         size=72, bold=True, color=WHITE,
+                         align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    sub = add_textbox(s, Inches(0.7), Inches(3.7), Inches(11.9), Inches(0.7),
+                      "Questions & Discussion",
+                      size=24, italic=True, color=WHITE,
+                      align=PP_ALIGN.CENTER)
+    rule = add_filled_rect(s, Inches(4.5), Inches(4.55), Inches(4.333),
+                           Inches(0.05), AZURE)
+    title = add_textbox(s, Inches(0.7), Inches(4.85), Inches(11.9), Inches(1.0),
+                        "Empirical Evaluation and Cost Optimization\n"
+                        "of Large Language Models in Azure Cloud Environments",
+                        size=20, bold=True, color=WHITE,
+                        align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    author = add_textbox(s, Inches(0.7), Inches(5.95), Inches(11.9), Inches(0.5),
+                         "Matin Abaszada", size=20, bold=True, color=WHITE,
+                         align=PP_ALIGN.CENTER)
+    sup = add_textbox(s, Inches(0.7), Inches(6.45), Inches(11.9), Inches(0.45),
+                      "Supervisor: Prof. Dr. Ivan Ovsyannikov   •   "
+                      "Constructor University, May 2026",
+                      size=14, italic=True, color=WHITE,
+                      align=PP_ALIGN.CENTER)
+    register_always_visible(s, thanks, sub, rule, title, author, sup)
+    return s
+
+
 def slide_section_break(prs, label, subtitle):
     s = blank_slide(prs)
     bg = add_filled_rect(s, 0, 0, SLIDE_W, SLIDE_H, NAVY)
@@ -1096,7 +1332,7 @@ def slide_section_break(prs, label, subtitle):
     return s
 
 
-def slide_backup_chart(prs, title, num, chart_file, body, key_insight):
+def slide_backup_chart(prs, title, num, chart_file, key_insight):
     s = blank_slide(prs)
     add_header(s, title, slide_num=None, section_label=f"BACKUP  •  B{num}")
 
@@ -1104,16 +1340,8 @@ def slide_backup_chart(prs, title, num, chart_file, body, key_insight):
                              Inches(0.5), Inches(1.3), Inches(8.7), Inches(5.7))
     register_group(s, pic)
 
-    head = add_textbox(s, Inches(9.4), Inches(1.3), Inches(3.7), Inches(0.5),
-                       "When to use", size=16, bold=True, color=NAVY)
-    rule = add_filled_rect(s, Inches(9.4), Inches(1.78),
-                           Inches(0.8), Inches(0.04), AZURE)
-    body_tb = add_textbox(s, Inches(9.4), Inches(1.95), Inches(3.7), Inches(2.2),
-                          body, size=13, color=NEAR_BLACK)
-    register_group(s, head, rule, body_tb)
-
-    cs = add_callout(s, Inches(9.4), Inches(4.4), Inches(3.7), Inches(2.5),
-                     key_insight, size=12, bold=False)
+    cs = add_callout(s, Inches(9.4), Inches(1.3), Inches(3.7), Inches(5.6),
+                     key_insight, size=13, bold=False)
     register_group(s, *cs)
     return s
 
@@ -1174,7 +1402,7 @@ def main():
     ))                                                            # 6
 
     slides.append(slide_chart(
-        prs, "Cost vs. Accuracy: 770× Difference", 7, "RESULTS  •  STANDALONE",
+        prs, "Cost vs. Accuracy: ~20× Gap at the Pareto Frontier", 7, "RESULTS  •  STANDALONE",
         "chart3_cost_vs_accuracy.png",
         side_text={"title": "Pareto frontier"},
         side_bullets=[
@@ -1222,8 +1450,10 @@ def main():
     slides.append(slide_self_consistency(prs))                    # 11
     slides.append(slide_router(prs))                              # 12
     slides.append(slide_summary_table(prs))                       # 13
-    slides.append(slide_conclusions(prs))                         # 14
-    slides.append(slide_limits(prs))                              # 15
+    slides.append(slide_unified_heatmap(prs))                     # 14
+    slides.append(slide_conclusions(prs))                         # 15
+    slides.append(slide_thanks(prs))                              # 16
+    slides.append(slide_limits(prs))                              # 17
 
     slides.append(slide_section_break(
         prs, "Backup", "Additional charts & detail for Q&A"))
@@ -1231,24 +1461,28 @@ def main():
     slides.append(slide_backup_chart(
         prs, "Per-Dataset Accuracy Breakdown", 1,
         "chart2_accuracy_per_dataset.png",
-        "Use if asked about model performance on a specific benchmark "
-        "(e.g. coding tasks, GPQA).",
         "Coding benchmarks are saturated (80–100%).  GPQA and MMLU-Pro "
         "are the most discriminating datasets."))
 
     slides.append(slide_backup_chart(
         prs, "Self-Consistency Decision Map", 2,
         "chartSC3_selfcons_best_config_heatmap.png",
-        "Use if asked when self-consistency is worth it.",
         "gpt-4.1-mini N=3 dominates the upper-left "
         "(latency-tolerant, accuracy-important) region."))
 
     slides.append(slide_backup_chart(
         prs, "Router Detail: Routing Behavior by Dataset", 3,
         "chartR1_router_overview.png",
-        "Use if asked how the router decides which questions to escalate.",
         "Coding tasks are almost never escalated; GPQA gets 40%+ "
         "escalation rate."))
+
+    slides.append(slide_backup_chart(
+        prs, "Per-Dataset Decision Maps", 4,
+        "chartUNI_unified_best_strategy_heatmap_per_dataset.png",
+        "Winner per (λ_error, λ_latency) cell, broken down by dataset. "
+        "Shows that the best strategy is not uniform across benchmarks — "
+        "e.g. coding tasks favor the small model almost everywhere, while "
+        "GPQA and MMLU-Pro give the Router and the large models more room."))
 
     slides.append(slide_backup_text(
         prs, "Reward Formula: Full Detail", 4,
