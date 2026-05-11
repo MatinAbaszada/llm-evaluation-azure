@@ -550,8 +550,8 @@ def slide_motivation(prs):
 
     blocks = [
         ("The Expensive Reality",
-         "Most LLM research assumes you run models locally: GPU clusters, "
-         "cooling, dedicated ops, millions in CapEx."),
+         "Because of GPU clusters, cooling, dedicated operations and millions in CapEx, "
+         "hosting LLMs locally is expensive."),
         ("The Shift to Cloud",
          "Enterprises move to cloud environments. One API call replaces an "
          "entire on-premise GPU server room. Pay only for what you use."),
@@ -611,7 +611,7 @@ def slide_research_gap(prs):
     rqs = [
         "How do Azure-hosted LLMs differ across accuracy, latency, and cost?",
         "Is reasoning-enabled inference economically justified?",
-        "Can a proxy optimization layer (router / cascade / self-consistency) "
+        "Can a proxy optimization layer "
         "improve cost-efficiency?",
     ]
     y = Inches(2.25)
@@ -638,7 +638,7 @@ def slide_design(prs):
     rows = [
         ("6 Azure Models  (2 generations × 3 tiers)",
          "gpt-4.1-mini · gpt-5.4-mini    |    gpt-4.1 · gpt-5.4    |    "
-         "o3-mini · gpt-5.4-pro  (reasoning)"),
+         "o3-mini · gpt-5.4-pro"),
         ("5 Benchmark Datasets",
          "HumanEval (Python coding) · MBPP (Python coding) · "
          "MMLU-Pro (multi-subject multiple-choice) · "
@@ -704,30 +704,30 @@ def slide_reward(prs):
     register_group(s, eq_bg, tb)
 
     items = [
-        ("$  Cost", "Deterministic from token counts × Azure prices.", GREEN),
+        ("$  Cost", "Cost of each request, deterministically calculated from tokens used × Azure price.", GREEN),
         ("⏱  Latency", "Wall-clock time per API call (seconds).", AZURE),
-        ("✗  Error", "Binary: correct (0) or wrong (1).", ORANGE_RED),
+        ("✗  Error", "Represents whether the model response is correct or wrong, encoded as a binary value.", ORANGE_RED),
     ]
     block_w = Inches(3.95); gap = Inches(0.2); left0 = Inches(0.55); top = Inches(3.3)
     for i, (title, body, color) in enumerate(items):
         x = left0 + i * (block_w + gap)
-        bg = add_filled_rect(s, x, top, block_w, Inches(2.0), WHITE,
+        bg = add_filled_rect(s, x, top, block_w, Inches(1.45), WHITE,
                              line_color=color, line_width=Pt(1.5))
-        ttl = add_textbox(s, x + Inches(0.2), top + Inches(0.15),
-                          block_w - Inches(0.4), Inches(0.55),
+        ttl = add_textbox(s, x + Inches(0.2), top + Inches(0.12),
+                          block_w - Inches(0.4), Inches(0.5),
                           title, size=20, bold=True, color=color)
-        bdy = add_textbox(s, x + Inches(0.2), top + Inches(0.75),
-                          block_w - Inches(0.4), Inches(1.2),
-                          body, size=15, color=NEAR_BLACK)
+        bdy = add_textbox(s, x + Inches(0.2), top + Inches(0.65),
+                          block_w - Inches(0.4), Inches(0.75),
+                          body, size=13, color=NEAR_BLACK)
         register_group(s, bg, ttl, bdy)
 
     callout_shapes = add_callout(
-        s, Inches(0.55), Inches(5.55), Inches(12.25), Inches(0.85),
-        "λ_latency = penalty per second of waiting.   "
-        "λ_error = penalty per wrong answer.   "
-        "Defaults: λ_latency = 0.01, λ_error = 1.0 (sensitivity swept).   "
-        "Higher reward (closer to zero) is better.",
-        size=14, bold=True)
+        s, Inches(0.55), Inches(5.0), Inches(12.25), Inches(2.0),
+        "•  λ_latency = penalty per second of waiting.\n"
+        "•  λ_error = penalty per wrong answer.\n"
+        "•  Defaults: λ_latency = 0.01, λ_error = 1.0 (sensitivity swept).\n"
+        "•  Higher reward (closer to zero) is better.",
+        size=14, bold=True, align=PP_ALIGN.LEFT)
     register_group(s, *callout_shapes)
     return s
 

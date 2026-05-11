@@ -725,7 +725,6 @@ The next two figures (Figure~\ref{fig:chartC4_cascade_reward_vs_lambda_error} an
 \label{fig:chartC5_cascade_reward_vs_lambda_latency}
 \end{figure}
 
-wtf
 
 Although the macro-average decision map shows that no cascade configuration ever beats a standalone model overall, the per-dataset decision maps in Figure~\ref{fig:chartC6_cascade_per_dataset_decision_map} reveal isolated exceptions. The gpt-4.1-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a broad upper-left region on MMLU-Pro, and the gpt-5.4-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a smaller upper-left section on GSM8K. The rest of the dataset results are still covered entirely by standalone models.
 
@@ -1119,7 +1118,6 @@ There are a number of practical implications of these results. First of all, whe
 
 This thesis approaches model selection from a different perspective. To fold accuracy, latency, and cost into a single scalar, a composite, reward-based economic model has been introduced, and the trade-offs between them are illustrated by computing the reward under different $\lambda_{e}$ and $\lambda_{l}$ parameters. Through applying this model, six Azure-hosted models across the 4.1 and 5.4 generations, the mini/full/pro tiers, and the standard and reasoning versions were compared on five benchmarks under identical conditions.
 
-wtf
 Further, cascade, router, and self-consistency techniques are evaluated within the same framework. Results reveal that the learned routing method achieves the best optimization-layer reward at the default weights and outperforms every standalone in a diagonal band of the ($\lambda_{e}$, $\lambda_{l}$) plane, while parallel self-consistency dominates the high-latency-penalty region; the confidence-based cascading approach, by contrast, is neutralized by LLM overconfidence. Finally, the thesis addresses several cloud-specific constraints, namely throttling, quota-driven latency outliers, and the divergence between mean and median latency, which are decisive in real deployments but usually absent from academic evaluations.
 
 \chapter{Conclusion, Limitations, and Future Work} \label{ch:conclusion}
@@ -1128,7 +1126,6 @@ Further, cascade, router, and self-consistency techniques are evaluated within t
 
 Through covering six Azure-hosted models, five datasets, and three optimization strategies, the empirical study of the thesis confirms that for enterprise deployments, LLM selection cannot be reduced to a single accuracy metric. Standalone evaluation shows that accuracy and cost do not align with a smooth frontier. Rather, they are divided into two distinct tiers, such that a 36 pp increase in macro accuracy corresponds to a three-order-of-magnitude difference in cost. After applying the economic reward function defined in Chapter~\ref{ch:methodology} with latency and cost values and calculating the reward, the model with the highest accuracy does not become the most favorable choice anymore and instead, gpt-5.4 emerges as the most balanced choice for general tasks.
 
-wtf
 The optimization techniques behave very differently from one another. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. Even though self-consistency does not reach the next stronger standalone model, it offers a modest, predictable accuracy lift for cheap workers when $N$ samples can be dispatched in parallel. Both the routing strategy and parallel self-consistency beat every standalone model in substantial but disjoint regions of the ($\lambda_{e}$, $\lambda_{l}$) plane (router along a diagonal band, self-consistency in the high-latency-penalty area), and for routing the router's quality dominates that of its workers. These results suggest that the benefit of an optimization layer in production depends much more on calibration and routing quality than on the intrinsic appeal of the strategy. Lastly, reasoning-enabled inference is best suited for accuracy-critical, latency-tolerant tasks rather than as a default approach.
 
 \section{Limitations} \label{sec:conclusion_limitations}
