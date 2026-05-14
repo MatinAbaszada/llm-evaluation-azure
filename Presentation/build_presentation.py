@@ -15,6 +15,7 @@ Includes:
 """
 
 from __future__ import annotations
+import math
 import zipfile
 from pathlib import Path
 
@@ -1349,17 +1350,21 @@ def slide_backup_chart(prs, title, num, chart_file, key_insight):
 def slide_backup_text(prs, title, num, body_blocks):
     s = blank_slide(prs)
     add_header(s, title, slide_num=None, section_label=f"BACKUP  •  B{num}")
-    y = Inches(1.4)
+    y = Inches(1.2)
+    line_h = 0.22  # inches per wrapped body line at 13pt
+    chars_per_line = 115
     for tag, txt in body_blocks:
-        head = add_textbox(s, Inches(0.6), y, Inches(12.1), Inches(0.45),
+        head = add_textbox(s, Inches(0.6), y, Inches(12.1), Inches(0.32),
                            tag, size=16, bold=True, color=NAVY)
-        y += Inches(0.5)
+        y += Inches(0.34)
         rule = add_filled_rect(s, Inches(0.6), y, Inches(12.1),
-                               Inches(0.05), AZURE)
-        y += Inches(0.15)
-        body_tb = add_textbox(s, Inches(0.6), y, Inches(12.1), Inches(1.2),
+                               Inches(0.04), AZURE)
+        y += Inches(0.10)
+        n_lines = max(1, math.ceil(len(txt) / chars_per_line))
+        body_h = line_h * n_lines + 0.05
+        body_tb = add_textbox(s, Inches(0.6), y, Inches(12.1), Inches(body_h),
                               txt, size=13, color=NEAR_BLACK)
-        y += Inches(1.05)
+        y += Inches(body_h + 0.18)
         register_group(s, head, rule, body_tb)
     return s
 
@@ -1453,7 +1458,6 @@ def main():
     slides.append(slide_unified_heatmap(prs))                     # 14
     slides.append(slide_conclusions(prs))                         # 15
     slides.append(slide_thanks(prs))                              # 16
-    slides.append(slide_limits(prs))                              # 17
 
     slides.append(slide_section_break(
         prs, "Backup", "Additional charts & detail for Q&A"))

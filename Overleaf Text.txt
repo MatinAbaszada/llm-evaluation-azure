@@ -89,7 +89,7 @@
 	\includegraphics[width=80mm]{CU_logo.png}\par\vspace{1cm}
 	\TheStudyProgram
 	
-	\TheSupervisor
+	\TheAuthor
 	
 	\rule{\textwidth}{1pt}
 	\vspace{35mm}
@@ -149,97 +149,76 @@
 \chapter{Introduction} \label{chapterIntro}
 
 \section{Background and context}
-Large language models, or LLMs, are foundation models that are pre-trained on large amounts of data and then adapted to multiple tasks \citep{bommasani2022opportunitiesrisksfoundationmodels}. Opportunity to use the same model for different tasks, including code generation, summarization, question-answering, information extraction, and logic execution is a huge advantage. Because of this reason, LLMs are considered as an intellectual component that could be integrated into software systems, instead of being a spesific tool for a single task.
-\newline
-\newline
-This is the main reason why these models are rapidly spreading in software systems. Especially in the software engineering, instead of being experimental technology, LLMs are practical tool for writing code, preparing technical explanations, Q\&A on internal knowledge bases, documentation, and increasing developer productivity \citep{a_surver_on_large_language_models_for_code_generation}. Therefore, the value of LLMs does not just lie on �smart answers� but also in their ability to be integrated into real workflows.
-\newline
-\newline
+Large language models, or LLMs, are foundation models that are pre-trained on large amounts of data and then adapted to multiple tasks \citep{bommasani2022opportunitiesrisksfoundationmodels}. Opportunity to use the same model for different tasks, including code generation, summarization, question-answering, information extraction, and logic execution is a huge advantage. Because of this reason, LLMs are considered as an intellectual component that could be integrated into software systems, instead of being a specific tool for a single task.
+
+This is the main reason why these models are rapidly spreading in software systems. Especially in the software engineering, instead of being experimental technology, LLMs are practical tool for writing code, preparing technical explanations, Q\&A on internal knowledge bases, documentation, and increasing developer productivity \citep{a_surver_on_large_language_models_for_code_generation}. Therefore, the value of LLMs does not just lie on "smart answers" but also in their ability to be integrated into real workflows.
+
 Within this landscape, Microsoft Azure, and more specifically Microsoft Foundry, has an important role. Microsoft describes Foundry as a unified platform-as-a-service within Azure that supports enterprise AI operations, model creation, and application development \citep{what_is_microsoft_foundry}. In other words, this is not just a place for hosting resources, but a centralized ecosystem for choosing, deploying, and managing LLM models and integrating with other Azure services. One thing that stands out about it is the model catalog. It pulls together models from a variety of sources, including Microsoft, OpenAI, DeepSeek, Hugging Face, Meta, and others. Basically, everything in one spot. Companies get to check out a ton of models without having to set up integrations everywhere. Instead of dealing with each AI vendor separately, they use a single platform \citep{explore_microsoft_foundry_models}. From an operations perspective, it simplifies designing systems and day-to-day management, making it less of a hassle.
-\newline
-\newline
+
 Running models on your local setup is so expensive, technically demanding, and time-consuming. Academic research on efficient inference shows that large model size, the computational burden of attention mechanisms, and autoregressive generation are the main factors that make LLM inference resource-intensive \citep{a_survey_on_efficient_inference_for_large_language_models}. In other words, local deployment is not just about running the model, it also requires appropriate GPU infrastructure, memory capacity, optimized systems, scalability, and continuous operational support. That's why it becomes a more rational choice to utilize infrastructure that is maintained and managed in the cloud context.
-\newline
-\newline
+
 In addition to infrastructure availability and preparation, Security and governance capabilities are another merit of the Cloud Environment. Based on Microsoft's data privacy documents, Azure Direct Models, including Azure OpenAI models, process data to provide the service, and this environment is provided with an enterprise-grade security and governance framework \citep{microsoft_data_privacy_security_2026}. For this reason, Azure is not solely a technical choice for running models, but also a feasible deployment environment for building AI applications in a secure, manageable, and institutionally compliant manner.
-\newline
-\newline
+
 The use of large language models (LLMs) in an Azure environment presents direct cost and performance matters. Azure OpenAI pricing is structured around pay-as-you-go and provisioned-throughput models. The pay-as-you-go model affords flexibility for variable workloads, whereas the provisioned throughput model is designed for stable and predictable usage \citep{microsoft_azure_openai_pricing_2026}. The provisioned throughput approach is also illustrated by the association of fixed latency and dedicated processing power \citep{microsoft_provisioned_throughput_2026}. Thus, in a real business setting, picking models for use is not only about how well they perform in terms of quality. It seems like other stuff matters too, like the cost per token, which can add up quickly, latency, which represents the time it takes to get responses, and how much volume you're dealing with overall, and lastly, functional stability to make sure that it doesn't crash or something during heavy use. At the end, all that influences the choice more than people might think at first.
 
 \section{Practical Motivation}
 The practical motivation for this thesis is that enterprises expect AI systems to deliver both high-quality results and acceptable cost and latency simultaneously. That is, the system should not just provide the correct answer, but should do so in an efficient and cost-effective manner. Studies dedicated to the economic evaluation of LLMs also show that in real-world use, the "strongest model" is not always the "best fit model" because the cost of error, the cost of delay, and the financial cost of a survey must all be considered \citep{economic_evaluation_of_llms}.
-\newline
-\newline
+
 Reasoning models get a bit more complicated than the usual ones. According to Microsoft, they spend extra time figuring out requests and getting what the user is after. That makes them pretty good for complex work, such as science problems, coding, or math\citep{microsoft_reasoning_models_2026}. The reasoning part helps them handle harder challenges better with extra steps. This slows things down a lot and increases costs in parallel because outputs end up longer. So it depends on whether the improved quality is worth the time consumed and the money spent. Organizations have to weigh that out for their own setups. If accuracy matters a lot, and latency or budget isn't a big deal, it pays off clearly.  However, if the gains are not that significant, it just feels like an extra hassle with little point. Sometimes the added reasoning clearly pays off, while other times, the improvement is not significant enough to justify the extra expense. That is the main factor to consider.
-\newline
-\newline
+
 There has been a recent surge in interest in approaches that act as proxy or optimization layers. These include routing, prompt compression, and hybrid model orchestration. The goal is not to send every query to the most expensive model but to decide based on the query's complexity and quality requirements. For example, some work reduces expensive model calls by routing between small and large models. Others reduce inference cost and latency by shortening the prompt \citep{hybrid_llm_cost-efficient_and_quality_aware_query_routing}. These strategies do not eliminate the fundamental trade-off but manage it more efficiently. The actual benefits can only be determined through empirical evaluation in specific cloud and enterprise environments.
-\newline
-\newline
+
 Microsoft Azure is a good spot for this type of evaluation. It offers you models from a variety of providers but keeps everything on one easy platform. The user can see the pricing based on tokens, throughput options, and quotas in one single place, revealing which model works best, or maybe which way to tweak it for deployment.
 
 \section{Research Gap}
 Recent studies indicate that evaluation results are highly dependent on various factors, including the selection of metrics and the specific real-world context \citep{a_systematic_survey_and_critival_review} \citep{holistic_evaluation_of_language_models}. Consequently, to get a proper result, the importance of multidimensional metrics should be taken into account and one-dimensional metrics should be omitted. Even though this was obvious, there remains no clear approach for consolidating these dimensions to assist practical model selection. In other words, previous works state the constraint of evaluation, but do not propose a technique that suggests an optimal model built upon accuracy, latency and cost.
-\newline
-\newline
-A second gap is seen in routing, compression, and other optimization approaches. Most of these works optimize for a specific goal, such as reducing the number of calls to a large model, improving a certain cost�performance frontier, or reducing token costs by shortening the prompt \citep{routerbeach_a_benchmark-for_multi_llm_routing_system} \citep{frugalgpt_how_to_use_large_language_models_while_reducing_cost} \citep{hybrid_llm_cost-efficient_and_quality_aware_query_routing}. These results are useful, but their main weakness is that they often show the technique improving its own internal goal without indicating whether it is the best choice overall. The same is observed in reasoning-oriented studies. The benefit of reasoning is shown to vary under constraints, but standalone models, reasoning-enabled models, and proxy-based optimization are not compared together and under the same decision principle \citep{an_emprical_study_of_llm_reasoning_ability_under_strict_output_length}. The main research gap, therefore, is not the lack of use of Azure; rather, existing techniques are often evaluated on separate partial goals, without a single decision or reward principle.
+
+A second gap is seen in routing, compression, and other optimization approaches. Most of these works optimize for a specific goal, such as reducing the number of calls to a large model, improving a certain cost–performance frontier, or reducing token costs by shortening the prompt \citep{routerbeach_a_benchmark-for_multi_llm_routing_system} \citep{frugalgpt_how_to_use_large_language_models_while_reducing_cost} \citep{hybrid_llm_cost-efficient_and_quality_aware_query_routing}. These results are useful, but their main weakness is that they often show the technique improving its own internal goal without indicating whether it is the best choice overall. The same is observed in reasoning-oriented studies. The benefit of reasoning is shown to vary under constraints, but standalone models, reasoning-enabled models, and proxy-based optimization are not compared together and under the same decision principle \citep{an_emprical_study_of_llm_reasoning_ability_under_strict_output_length}. The main research gap, therefore, is not the lack of use of Azure; rather, existing techniques are often evaluated on separate partial goals, without a single decision or reward principle.
 
 \section{Aim of the thesis}
 This thesis aims to fill in that missing part by evaluating selected Azure-hosted models through a unified empirical and decision framework and seeing how they intervene. The first goal was comparing output quality, latency, token usage, and financial cost on the same range of tasks. In doing so, the thesis attempts to overcome the problem that is often encountered in previous works, that these metrics are discussed separately.
-\newline
-\newline
+
 The second goal assesses whether judgment-based models are economically justifiable. That is, the question to ask isn't just if judgment can improve performance, but if judgment provides sufficiently great improvement that the added time and money are worth it. The third goal investigates whether it pays off to add a proxy-based optimization layer. Here, routing, proxying, and judging aren't necessarily good. They're considered possible strategies for deploying, evaluated with the same decision methodology as the stand-alone model. Thus, this paper goes beyond comparing models and unifies them with judgment methods and optimization methods as components of one evaluation framework.
 
 \section{Scope}
 This thesis presents a comparative evaluation of selected large language models deployed on Microsoft Azure. The study focuses on a defined group of models, tasks, and optimization approaches. Output quality, latency, token usage, and financial cost are used as main criteria, and the results of the standalone models are compared with those obtained after the model optimization process.
 
 \section{Thesis structure}
-Following this introduction, Chapter 2 reviews the scientific literature on the topic and analyzes existing work in a comparative manner. Chapter 3 formulates the problem and specifies the research objectives and questions. Chapter 4 explains the methodology, models used, tasks, metrics, and experimental design. Chapter 5 presents the results obtained, and Chapter 6 interprets these results, answers the research questions, and makes connections with the literature. At the end, Chapter 7 summarizes the overall results, points out limitations, and describes future work directions.
+Following this introduction, Chapter 2 reviews the scientific literature on the topic and analyzes existing work in a comparative manner. Chapter 3 explains the methodology, models used, tasks, metrics, and experimental design. Chapter 4 presents the results obtained, and Chapter 5 interprets these results, answers the research questions, and makes connections with the literature. At the end, Chapter 6 summarizes the overall results, points out limitations, and describes future work directions.
 
 
 \chapter{Literature Review}
 
-\section{Scope Rewiew and Analytical Lens}
+\section{Scope Review and Analytical Lens}
 This literature review does not aim to cover all aspects of the field of large language models. Instead, it focuses on the literature that is directly relevant to the main problem of the thesis, which is how to compare existing language models and optimization strategies when quality, latency, and cost are simultaneously considered. This narrower approach is necessary because general model queries are useful for background information, but they do not answer deployment decisions on their own. As several papers attest, instead of only in one scenario, language models need to be evaluated in a variety of scenarios and by several measures.\citep{holistic_evaluation_of_language_models} Concurrently, some other works do the same in a decision wise manner by considering trade-offs between error, latency, and monetary cost.\citep{economic_evaluation_of_llms}
-\newline
-\newline
+
 Therefore, this chapter is structured around three main lines of literature. The first line is related to LLM evaluation. This includes in particular benchmark design, repeatability, and metric selection. The second line is connected with reasoning-enabled inference, since the recent models often achieve more accurate results by spending more time on computation during testing stage. So the third line focuses on system level optimization. It gets into stuff like routing, proxying, and techniques for serving inferences, considering that enterprises mostly do not rely on standalone models on their own and embed them into a broader inference system instead. Researchers keep pointing out why a systems approach matters for large language models in two ways. Some of them point out that it depends on the architecture you pick, and that makes a huge change in evaluation results. \citep{a_systematic_survey_and_critival_review} Some other work examines performance in terms of latency and throughput, as well as resource management. \citep{taming_of_titans_a_survey_of_efficient_llm_inference_serving}
-\newline
-\newline
+
 The analytical approach of this chapter is therefore explicitly deployment-oriented. The main problem here concerns not the abstract power of a model, but rather the suitability of a particular model or inference strategy given specific task difficulty, response time requirements, and budget constraints. This is why this chapter prioritizes work on evaluation frameworks, reasoning efficiency, and query routing over the pretraining or fine-tuning literature. In the context of this thesis, these stated three lines initiate the most appropriate base for comparing the standalone models, reasoning-enabled models, and proxy based optimization methods in the future stage.
 
 \section{LLM Evaluation for Deployment Decisions}
 Based on \citep{holistic_evaluation_of_language_models}, LLM evaluation appears to be invalid when reduced to a single benchmark. This answers exactly why approaches have been put forward emphasizing that model behavior varies across scenarios, and that real-world use cases require more than raw accuracy, including robustness and capability. Along the same script, there are critical reviews that show that evaluation results can be strongly dependent on the choice of benchmark, prompt format, decoding parameters, parsing scripts, and even the specific version of the closed model. \citep{a_systematic_survey_and_critival_review} This implies that,  eventually, evaluation goes beyond just being a neutral way to report results and is actually woven right into the research design itself.
-\newline
-\newline
+
 This issue becomes clearer when benchmarks that represent different areas of expertise in general are observed. In the area of code generation, HumanEval presented as a benchmark, measuring function correctness through unit tests \citep{evaluating_large_language_models_trained_on_code}, while MBPP is proposed as a benchmark that assesses the generation of short Python programs from natural language descriptions. \citep{program_synthesis_with_large_language_models} HumanEval measures function correctness via unit tests, whereas MBPP evaluates through generating short Python programs from natural-language prompts; add a short example to show how a solution might pass one benchmark but fail the other. As a result, achieving a high score in one benchmark does not guarantee the same outcome on the other one
-\newline
-\newline
+
 A similar issue arises in how knowledge and reasoning are assessed in benchmarks. The primary MMLU benchmark was very effective because it measured general knowledge across a wide range of scholarly and occupational domains. \citep{measuring_massive_multitask_language_understanding} However, recent work argues that benchmarks with harder questions or narrower, domain-specific focus are needed to reveal differences in model capabilities and to improve robustness to data shifts. For this reason, \citep{mmlu_pro_a_more_robust_and_challenging_multitask} operated to reduce saturation (where models hit a performance ceiling) and prompt sensitivity (performance varying with wording) by using harder questions and a ten-choice format, while \citep{gpqa_a_graduate_level_google_proof_qa} utilized to target graduate-level, 'Google-proof' scientific questions that remain difficult even with web access. These changes make it pretty clear that the benchmark we pick plays a big role in spotting actual differences between those capable models and the frontier ones.
-\newline
-\newline
+
 Another important result from the literature is that the measured ability depends not only on the model itself, but also on the inference method used to obtain the answer. There are works which prove that sampling multiple reasoning paths can outperform simple greedy decoding on complex reasoning tasks. \citep{self_consistency_improves_chain_of_thought} Concurrently, another research shows that setting script limits to output length can make a difference in the gain of reasoning. \citep{an_emprical_study_of_llm_reasoning_ability_under_strict_output_length} The top model and prompt style could end up looking different if tokens are limited or delays get stricter. Cloud-based applications typically operate under time and cost constraints, rather than unrestricted benchmark conditions. This constraint is particularly important and should be taken into account from a deployment standpoint
-\newline
-\newline
+
 For this reason, the evaluation of deployment decisions should not be limited to accuracy alone. This pattern has already been taken into account in \citep{economic_evaluation_of_llms}. It combines the cost of error, delay inference under a unified decision framework. From a system perspective, model quality is just a single factor that affects the practical LLM performance and there are more factors that could be added to the list, such as scheduling, batching, cache management, and throughput. \citep{taming_of_titans_a_survey_of_efficient_llm_inference_serving} To put it another way, if the model has extremely high performance metrics and is therefore prominently featured in particular as a very good model within the benchmark table, it may still be one of the worst choices for any realistic field deployment scenarios. The reasons are being too slow for response generation, or perhaps because under heavy load conditions its stability or reliability is questionable and possibly each useful response will become far too costly.
-\newline
-\newline
+
 This argument is reinforced by recent routing work. \citep{hybrid_llm_cost-efficient_and_quality_aware_query_routing}, suggests that different small and large models can be integrated for cheaper inference while meeting quality targets through difficulty-aware routing. It incorporates the reasoning that making inferences is useful work, as it moves the evaluation unit from a single model to the inference system. For this thesis, the best practical solution might neither be the cheapest pure model nor the strongest pure model, but rather a system that achieves an intelligent balance between them both.
-\newline
-\newline
+
 In summary, the literature implies that evaluation oriented to deployment should meet four criteria. Because quality, on its own, is not enough and different datasets measure different aspects of capability, it should be benchmark-aware and multi-metric. Also prompts and decoding strategies change the result, so it should be configuration-aware. Lastly that needs to be system savvy, too, because inference orchestration is just as critical for real-world performance as the foundational model. These conclusions issue the bases for the empirical comparisons, conducted later in this paper.
 
 \section{Reasoning-Oriented Inference Under Cost and Latency Constraints} \label{sec:reasoning_inference}
 
 Inference geared towards reasoning involves availing of further computational resources at test time, rather than offering an immediate response. This is especially applicable to mathematical and multi-step tasks, because the correctness could be increased by doing more reasoning steps, but then will usually have longer outputs, increased tokens, and latency. \citep{an_emprical_study_of_llm_reasoning_ability_under_strict_output_length} shows that the value of reasoning is highly dependent on the inference budget available rather than being just a function of pure capability. 
-\newline
-\newline
+
 Self-consistency is a representative method in this regard. This model samples many reasoning paths instead just one greedy reasoning trace and chooses the final answer that has more consistency.  Previous studies have demonstrated that this kind of decoding approach can really boost scores on those reasoning tests. It points to ways we might get better results from the model just during the inference stage, without having to go back and retrain everything from scratch. At the same time, these gains were attained with the help of generating multiple inferences against certain data sets and thus require greater computational efforts as well. \citep{self_consistency_improves_chain_of_thought}
-\newline
-\newline
+
 Pragmatically then, rather than asking if reasoning can help in principle the question asked here will be whether the quality gain is worth the additional computation needed. This is important because recent budget-aware evaluation shows that the best model or prompt style in an unconstrained environment might also not be the case when imposed output or time limits are quite stringent. That is, reasoning should be interpreted as a conditional inference strategy that we can use when they provide an advantage owing to the setting of deployment. \citep{an_emprical_study_of_llm_reasoning_ability_under_strict_output_length}
-\newline
-\newline
+
 For that reason, this thesis does not assume that inference with reasoning enabled is better than without it. It considers reasoning a type of strategy to be evaluated with respect to non-reasoning alternatives under the same evaluation. This aligns with recent work stating that more computation is not a problem only if it avoids enough errors to justify the extra expense and time. \citep{economic_evaluation_of_llms}
 
 \section{Inference Optimization Approaches}
@@ -258,28 +237,23 @@ Cascade methods also combine small and large models, but sequentially. A smaller
 \subsection{Self-Consistency and Multi Sample Inference}
 
 Unlike routing and cascades, self-consistency does not switch models. It enhances one model with sampling multiple reasoning paths and selecting the most coherent answer. As the paper \citep{self_consistency_improves_chain_of_thought} shows, there are significant improvements on benchmarks like GSM8K, SVAMP and AQuA. This means that whilst model inference has not been retrained for greater accuracy, it is been managed to get more performance at inference time.
-\newline
-\newline
+
 The clear limitation here is that repeated sampling increases computation, cost and latency. Routing and cascades are cost-saving techniques that selectively use models, while self-consistency helps with quality by using more computation on the same model. That's self-consistency is usually applied to small and cheap models. It eliminates small models' abrupt answers by benefiting from its low cost
 
 \section{Cloud-Based LLM Deployment Constraints} \label{sec:cloud_constraints}
 
 The concept of cloud context described within the present thesis is mainly relevant in regards to what happens at the service level, rather than infrastructure-related concerns or what pertains to hardware and platform. Picking an Azure model is based not only on the output quality but also on the deployment mode, quota architecture, rate limits, and pricing. Microsoft offers provisioned output if the predictable output and latency are in demand. \citep{microsoft_what_is_provisioned_throughput_for_foundry_models} This emphasis rightly moves the deployment mode from a simple technical nuancing to an important strategic, pragmatic decision variable that has to be given due diligence of consideration when applying it in practice.
-\newline
-\newline
+
 The second limitation is that Azure usage is regulated by quotas and usage levels. Azure OpenAI quotas are set by region, subscription, and model or deployment type, and are expressed in tokens per minute and queries per minute. In addition, Microsoft notes that latency becomes more stable and predictable when traffic stays around the assigned usage tier. On the other hand, if the system experiences continuous or occasional bursty usage above these thresholds, it may lead to dramatic latency and more 429 errors (Too Many Requests). It should also be considered that, quota does not guarantee the capacity, because it is allocated at deployment time. \citep{microsoft_azure_openai_quotas_limits_2026} \citep{microsoft_what_is_provisioned_throughput_for_foundry_models}
-\newline
-\newline
+
 This makes the main topic of the current thesis methodologically well chosen. The study does not examine low-level hardware or GPU scheduling, but rather accurately assesses the remaining variables relevant to the decision in an Azure-hosted environment: quality, latency, token usage, and cost-per-unit. The model, request size, tokens generated, and overall deployment load are Microsoft verified factors that determine latency. \citep{microsoft_azure_openai_latency_2026} This is very consistent with the evaluation metrics used in this thesis. As a result, the thesis is positioned not as a systems engineering study, but as a practically-based deployment study that evaluates model selection under service constraints that actually matter in Azure.
 
 \section{Positioning of the Thesis}
 
-When all issues examined in this chapter are considered collectively, one clear conclusion appears: benchmark accuracy can not be relied on alone when comparing models for actual real-world use. The previous sections showed that benchmark selection, inference strategy, and optimization logic all affect measured performance. As discussed in Section 2.5, the deployment environment itself in Azure also shapes practical model selection through its pricing regime, quota structure, and latency behavior. \citep{microsoft_azure_openai_quotas_limits_2026} Microsoft�s documentation clearly shows that throughput, latency stability, and quota are not purely intrinsic properties of the model, but rather service-level constraints.
-\newline
-\newline
-This is where our thesis comes in. It doesn�t study low-level service architecture, GPU scheduling, or self-hosted infrastructure optimization. Nor does it propose a new router or a new benchmark. Instead, the paper focuses on how specific Azure models are deployed and on comparing optimization strategies, using a consistent framework to assess performance in terms of quality, latency, token consumption, and value. This deployment follows directly from the fact that the use of the Azure model is constrained by service-level terms such as quotas, rate limits, and deployment mode.
-\newline
-\newline
+When all issues examined in this chapter are considered collectively, one clear conclusion appears: benchmark accuracy can not be relied on alone when comparing models for actual real-world use. The previous sections showed that benchmark selection, inference strategy, and optimization logic all affect measured performance. As discussed in Section 2.5, the deployment environment itself in Azure also shapes practical model selection through its pricing regime, quota structure, and latency behavior. \citep{microsoft_azure_openai_quotas_limits_2026} Microsoft's documentation clearly shows that throughput, latency stability, and quota are not purely intrinsic properties of the model, but rather service-level constraints.
+
+This is where our thesis comes in. It doesn't study low-level service architecture, GPU scheduling, or self-hosted infrastructure optimization. Nor does it propose a new router or a new benchmark. Instead, the paper focuses on how specific Azure models are deployed and on comparing optimization strategies, using a consistent framework to assess performance in terms of quality, latency, token consumption, and value. This deployment follows directly from the fact that the use of the Azure model is constrained by service-level terms such as quotas, rate limits, and deployment mode.
+
 The contribution of the thesis is therefore not to argue that optimization approaches systematically achieve better results than using a model on its own. It also does not assume that the strongest model is always the best choice. Instead, the thesis tests these different approaches under a single empirical design in the Azure environment. In this way, it serves as an empirical deployment study. It integrates the benchmark evaluations, reasoning-based inference, and proxy-based optimization with the true service constraints.
 
 
@@ -290,66 +264,53 @@ The contribution of the thesis is therefore not to argue that optimization appro
 This bachelor's thesis is based on an empirical, experimental, quantitative, and comparative research design. The study is empirical because all measurements are obtained from real API interactions and no simulation results or synthetic estimates were considered. The study is experimental because fixed benchmark samples, fixed prompt rules, and predefined optimization configurations are used. This allows task inputs and evaluation logic to be kept constant when the model or orchestration strategy is changed. The study is quantitative because the main results are numerical and directly comparable. These results include accuracy, latency, token usage, financial cost, and the economic reward derived from it. At the same time, this study is comparative because no model or strategy is interpreted in isolation, meaning all conditions are compared with standalone baseline results and competing optimization approaches. This approach aligns with the purpose of the thesis, because the aim was to determine the best model choice based on the particular deployment strategy, instead of globally defining the best model.
 \subsection{Overall Study Design}
 The study was set up as a controlled comparison and was conducted in a single cloud environment. All selected models were deployed in the Azure environment and tested on the same task family, with task-specific but standardized prompts. Lastly, all outcomes were processed through the evaluation pipeline. The first stage of the design is a standalone evaluation. In this stage, the evaluation pipeline sent questions from each benchmark to the model, and stored the answers. During this process, logging tools are used to record baseline measurements such as accuracy, latency, token usage, and cost per request. These results serve as a reference point for subsequent optimization analyses.
-\newline
-\newline
+
 In the second phase of the investigation, three different optimization approaches for the same tasks, namely router selection, cascade escalation, and self-consistency, were investigated.  The goal of the study is not just whether these strategies impact accuracy, but also if they impact the overall deployment outcome when time and cost are considered together. Because all results are evaluated under the same evaluation framework, no matter the condition, single model deployment and proxy based orchestration approaches could be directly compared
 \subsection{Study Phases and Comparison Logic}
 The thesis has a stepwise comparison logic. In the first stage, standalone model benchmarks were done to identify the main capability frontier on selected datasets. The second phase assessed various cascade designs to check if the model escalation from smaller to larger, when necessary, has any advantages or not. The third stage analyzed the router configurations with the assumption that an additional decision model can be more effective in query distribution between the cheap and strong models. The fourth stage looks into self-consistency as an inference strategy within the same model. Here, additional sampling was utilized to see whether there will be any inference quality improvement
-\newline
-\newline
+
 In all of these high-level abstraction phases, the individual models always continue to play a core role in explaining behavior. As a result, optimization strategies are no longer evaluated based on core business ideas, such as routing split or escalation rate. But they are rated against the degree to which they outperform relevant standalone alternatives on the combined deployment criteria.  The full comparison is methodically performed both at the macro and micro levels. Macro level means combining all datasets as a whole, and micro level means combining per-dataset so that deep dives can be performed within each dataset. The design makes sense in the context of the thesis questions, where they are dealing with both absolute model quality and also understanding when additional reasoning or orchestration is economic to use.
 
 \section{Models, Tasks, and Data}
 
 \subsection{Studied Models} \label{subsec:studied_models}
-Six different Azure models were used to cover the various LLM models, capability tiers, and reasoning mode types. The first group consists of gpt-4.1-mini and gpt-5.4-mini. These two represent cheap and small models that are affordable to deploy to the cloud environment. The second group is made of gpt-4.1 and gpt-5.4, which represent stronger general-purpose models from two successive generations. These two provide the main standalone comparison points. The third group consists of o3-mini and gpt-5.4-pro, which represent reasoning-oriented models at different capabilities and cost levels. For the reasoning-enabled models, namely gpt-5.4-pro, gpt-5.4 and o3-mini, the reasoning effort was set to medium, whereas for the small, low cost gpt-5.4-mini model, the reasoning effort was explicitly set to none. Additionally, the Azure OpenAI API version was 2024-12-01-preview, and all six models were deployed using the default auto-update policy. The idea behind the auto-update policy is to serve the latest model version released by Microsoft. When the study was run, gpt-4.1 and gpt-4.1-mini were served at version 2025-04-14, o3-mini at 2025-01-31, gpt-5.4 and gpt-5.4-pro at 2026-03-05, and gpt-5.4-mini at 2026-03-17.
-\newline
-\newline
+Six different Azure models were used to cover the various LLM models, capability tiers, and reasoning mode types. The first group consists of gpt-4.1-mini and gpt-5.4-mini. These two represent cheap and small models that are affordable to deploy to the cloud environment. The second group is made of gpt-4.1 and gpt-5.4, which represent stronger general-purpose models from two successive generations. These two provide the main standalone comparison points. The third group consists of o3-mini and gpt-5.4-pro, which represent high-end, expensive models at different capability and cost levels. For the reasoning-enabled models, namely gpt-5.4-pro, gpt-5.4 and o3-mini, the reasoning effort was set to medium, whereas for the small, low cost gpt-5.4-mini model, the reasoning effort was explicitly set to none. Additionally, the Azure OpenAI API version was 2024-12-01-preview, and all six models were deployed using the default auto-update policy. The idea behind the auto-update policy is to serve the latest model version released by Microsoft. When the study was run, gpt-4.1 and gpt-4.1-mini were served at version 2025-04-14, o3-mini at 2025-01-31, gpt-5.4 and gpt-5.4-pro at 2026-03-05, and gpt-5.4-mini at 2026-03-17.
+
 Together, these six models provide a broad comparison area, from low-cost standard inference to high-value, high-performance inference with decision-making capabilities. The choice was also made to facilitate later optimization studies, since small models can be utilized as a model in stage 1 of cascades and routers, whereas larger models can be used as escalation or target models.  In order to avoid multiple cross-provider differences in logging, deployment interface, and pricing structure, all evaluations were conducted within the same Azure-based service parameters.
 \subsection{Benchmark Tasks} \label{subsec:benchmark_tasks}
 To cover the major capability types relevant to practical LLM deployment, five benchmark tasks, consisting of code generation, programming problem solving, knowledge-intensive reasoning, expert scientific reasoning, and multi-step mathematical reasoning were selected. For each of them, different datasets were used. 
-\newline
-\newline
+
 HumanEval is used to evaluate code generation from natural-language specifications and focuses on the functional correctness of produced Python code.\citep{evaluating_large_language_models_trained_on_code}
-\newline
-\newline
+
 MBPP complements HumanEval by testing short-form Python programming tasks that require full program synthesis from brief natural-language descriptions. \citep{program_synthesis_with_large_language_models}
-\newline
-\newline
+
 MMLU-Pro is included for benchmarking multiple academic knowledge domains and reasoning in multiple choice format. This is an ideal dataset for testing general high-level reasoning under structured answer constraints. \citep{mmlu_pro_a_more_robust_and_challenging_multitask}
-\newline
-\newline
+
 GPQA is used as the hardest science-oriented benchmark in the study and provides expert-level multiple-choice questions. The questions are in multiple domains, like biology, chemistry, and physics and specifically designed to be difficult even for skilled non-experts with access to web search.\citep{gpqa_a_graduate_level_google_proof_qa}
-\newline
-\newline
+
 GSM8K is included to measure multi-step arithmetic and textual mathematical reasoning in a concise answer format \citep{training_verifiers_solve_math_word_problems}
-\newline
-\newline
+
 These five benchmarks together create a test environment such that makes it capable of containing relatively easy coding tasks, broad knowledge-based questions, and more difficult reasoning tasks. This causes not only the average performance differences but also the deployment accuracy changes based on the task observable.
 
 \subsection{Datasets, Prompts, and Inputs} \label{subsec:datasets_prompts}
 
-The HuggingFace interface was used for loading the benchmark datasets. HumanEval was used on 164 samples in the test split, MBPP on 500 samples in the test split, GPQA on 448 samples over selected benchmark splits and GSM8K used on 1.319 samples from the test split. MMLU-Pro contains twelve thousand questions in total. To stay operationally feasible and maintain a very sizeable reasoning benchmark with this huge number of questions, 5.000 were used out of 12.000 questions. The same sample order was kept in each model sampling and no random resampling was performed during standalone model comparison. Lastly, for all baseline and orchestration runs except self consistency, the temperature was fixed at 0.0 to keep the responses as deterministic as possible.
-\newline
-\newline
+The HuggingFace interface was used for loading the benchmark datasets. HumanEval was used on 164 samples in the test split, MBPP on 500 samples in the test split, GPQA on 448 samples over selected benchmark splits and GSM8K used on 1{,}319 samples from the test split. MMLU-Pro contains twelve thousand questions in total. To stay operationally feasible and maintain a very sizeable reasoning benchmark with this huge number of questions, 5{,}000 were used out of 12{,}000 questions. The same sample order was kept in each model sampling and no random resampling was performed during standalone model comparison. Lastly, for all baseline and orchestration runs except self consistency, the temperature was fixed at 0.0 to keep the responses as deterministic as possible.
+
 Although prompt design demonstrated small differences, depending on the type of task, it was standardized in general.  The models were instructed to return only executable Python code and warned to skip any explanations or additional text for HumanEval and MBPP. The purpose was to make the automatic execution and pass/fail tests possible. For MMLU-Pro, the response was limited to only one variant letter. For GPQA the LLM was prompted to give the response with the full text of the chosen answer and not with the variant letter. For GSM8K, the models were instructed to return only the final numerical answer. The aim of this format is to reduce the variability in the response format and the post-processing needed to evaluate the correctness of the response.
-\newline
-\newline
+
 In the Cascade strategy, a confidence-reporting instruction was appended to the base prompt, which led the first-stage model to emit the response and the confidence value. This was then used to make the escalation decision. Overall, the data and prompt structure were designed to keep the comparison as controlled as possible. It is also worth mentioning that for achieving this purpose, the task inputs, sequence rules, and output constraints remained constant across the baseline study, while the models were changed.
 
 \section{Evaluation Framework and Decision Criteria}
 
 \subsection{Correctness and Quality Measurement} \label{subsec:correctness}
 The evaluation framework of this study was designed with the aim of making all models and optimization strategies comparable under the same correctness logic. However, because the benchmark tasks are different in nature, measuring them with a single universal metric would be inconsistent. Considering this, different task-specific evaluation rules are applied. For HumanEval and MBPP, the Python code answers were deemed correct if they passed the corresponding test cases. For MMLU-Pro, the answer was considered correct if the predicted letter of the choice matched the correct option's letter. GPQA followed a similar approach. The only difference was that instead of the predicted letter, the framework compared the generated answer text. For GSM8K, the final numerical answer was extracted and compared with the reference numerical result. In all cases, the answer was reduced to a binary result, where 1 and 0 represented correct and incorrect answers respectively.
-\newline
-\newline
+
 This binary format of correctness allowed all conditions in the study to be assessed with the same output format. Then, for each dataset, accuracy was computed as a ratio of correct answers to all answers. In addition to dataset-level accuracy, macro-average accuracy was also used across the full benchmark suite. The macro-average used in this thesis takes all the values of all datasets to be equal in the score calculation. This choice served two main purposes. First one was to prevent larger datasets from dominating the overall comparison and second one was to keep the decision framework balanced across all task types.
 
 \subsection{Latency and Token Measurement} \label{subsec:latency_token}
 
 Throughout the thesis, measured latencies were based on the wall-clock elapsed time per request. In simple words, they represent the time from the moment an API call was sent until the full response was received. As such, latency becomes a measurement with respect to the deployment instead of just an upper bounding model speed estimation. This implies that latency is not an indication of theoretical model speed, but a measure around deployments, because it also reflects practical service behaviour in the Azure environment. At the end, this measurement includes not only internal inference speed but also other time characteristics that are relevant in real-world usage.
-\newline
-\newline
+
 Regarding the token usage, the process was simple. It was recorded directly from the API response metadata. Both prompt tokens and completion tokens were stored for each request. This was necessary because token usage is the direct basis of financial cost in Azure pricing and also provides an additional indicator of model behavior. Put another way, token consumption was used as a variable for billing and was directly connected to latency and output verbosity.
 
 \subsection{Cost Calculation Method} \label{subsec:cost}
@@ -383,8 +344,7 @@ Throughout the study, the standalone baseline outcomes served as the reference c
 \subsection{Router Strategy} \label{subsec:router_strategy}
 
 The router strategy was designed to determine, for each incoming query, whether the query should be answered by a cheaper small model or by a more expensive large model. In this thesis, the router is an extra decision stage prior to the answering model, and instead of routing all items to a single model, it tries to route some items, presumably the easier ones, on a cheaper path and the other ones on a stronger path. As a result, this allows the use of different LLM models in scenarios where the trade-off between quality and cost differs.
-\newline
-\newline
+
 Four router configurations were evaluated in total. Two router models were used, namely gpt-4.1-mini and gpt-5.4-mini and combined with two small-to-large answer paths.
 
 \begin{enumerate}
@@ -397,8 +357,7 @@ Four router configurations were evaluated in total. Two router models were used,
 \subsection{Cascade Strategy} \label{subsec:cascade_strategy}
 
 Cascade strategy involves a sequential decision-making process. The small model answers first, along with providing a confidence value for its output. If the confidence is higher than a specified threshold, then the small model's output is accepted. Otherwise, the prompt gets passed to the large model, and its response is used as the final response. However, while with the routing approach, the routing process occurs before the answer is generated, cascade initially lets the small model attempt the task and invokes the large model only in case the small does not satisfy the required confidence in its answer.
-\newline
-\newline
+
 In the thesis, four small-large model pairings were tested:
 
 \begin{enumerate}
@@ -413,15 +372,13 @@ For each pair, three confidence thresholds were evaluated: 60, 75, and 90. This 
 \subsection{Self-Consistency Strategy} \label{subsec:selfcons_strategy}
 
 Self-consistency was a quality improvement method at inference time for the same model, rather than a multi-model orchestration method. In this case, the same question is sent multiple times to the same model and the final output sent as an answer is chosen based on majority vote across generated outputs. This strategy is based on the premise that randomly sampling multiple times will address unconfident, low-confidence single-shot answers without any need to change the model. In this thesis, since the aim of self-consistency was to improve quality by allocating additional inference budget to the same model rather than switching between models, it was treated as a standalone optimization scenario.
-\newline
-\newline
+
 During the self consistency experiments, the same question was submitted to the model three times and in order to satisfy the variability, the model temperature was set to 0.7 for all runs. For the self consistency experiments, gpt-4.1-mini and gpt-5.4-mini models were intentionally selected. Because repeated inference is more realistic when performed on low-cost models, the selected models perfectly suit this idea. After receiving all three answers, the final answer was chosen based on the majority vote. While this approach increased the token cost in a foreseeable fashion, the study was able to perform a more direct test of whether spending more inference on an inexpensive model may ever be competitive with a better standalone model.
 
 \section{Experimental Procedure and Analysis}
 
 The analysis was conducted at two levels. In the first, calculations of dataset-level metrics were made to compare how model and strategy performance varied between HumanEval, MBPP, MMLU-Pro, GPQA, and GSM8K. Then, in the second level, macro aggregation was performed over the datasets. Under this approach, each dataset had an equal weight in the aggregate scores. Otherwise, larger datasets would have dominated the overall comparison.
-\newline
-\newline
+
 In addition to the default comparison, the paper investigated the effects of varying the error and latency penalties on the economic reward function. By plotting the resulting values for various error and latency penalty choices, it was achieved to see under which penalty settings, which model or optimization strategy is a better choice. By leveraging it, the analysis examined how deployment decisions varied with different trade-offs between latency and error.
 
 \section{Reproducibility and Validity Considerations}
@@ -429,18 +386,15 @@ In addition to the default comparison, the paper investigated the effects of var
 \subsection{Measurement Consistency and Reproducibility}
 
 Another important aspect that was considered in the study was the consistency of the measurements. To ensure this, several measures were taken. Usage of fixed inputs and a common reward framework for the benchmarks were the most critical ones and implementing constant prompt rules and a shared evaluation framework further motivated it. Through experiments, the same datasets, answer-format constraints, and correctness rules were used. Lastly, the same sample order was preserved across all model runs. All these measures were taken to reduce variation and increase consistency across repeated executions.
-\newline
-\newline
+
 To further support reproducibility, raw outputs were stored together with all relevant derived metadata. Because the evaluation was applied through the same pipeline, after getting the LLM response, all results were traceable at the record level. Moreover, storing all results in files later enabled computing derived metrics and rewards with different aggregation settings and penalty values. For this, the reward function was fed with different $\lambda_{e}$ and $\lambda_{l}$ values without running the full benchmark. This improves both auditability and reproducibility of the analysis.
 
 \subsection{Validity and Reproducibility Considerations}
 
 There are several factors that need to be considered regarding the study's internal validity. One of them concerns the interpretation of latency. Although it was measured consistently, it should not be treated as a purely model intrinsic property. In Azure-based deployments, observed latency can also reflect service-side factors such as deployment configuration, throughput behavior, and version management. Therefore, the latency results derived from experiments should be interpreted as deployment level observations and not as pure model characteristics.
-\newline
-\newline
+
 Another reproducibility detail relates to deployment versioning. For standard deployments, Azure OpenAI allows either auto-updating to the default or fixed-to-a-specific-version policies. Microsoft further explains that deployments with an auto-update policy may migrate to a new default version within about 2 weeks of the default being updated. On the other hand, specific version deployments require manual updates or model retirement to change the version. Because the model version and deployment policy are among the factors that affect the experiment results, these parameters should be reported explicitly.
-\newline
-\newline
+
 One final important consideration regarding reproducibility concerns the scope of the study. The scope could be discussed both from internal and external validity perspective. Internal validity refers to how certain we can be about the interpretation of the relationships we have observed, while external validity concerns how broadly the results might reasonably hold. In this study, the primary concern relates to external validity, as only Azure-hosted models were evaluated using five benchmark families and three optimization options. So, the results hold for the particular deployment settings and benchmark space tested. However, it lacks much about other deployment environments, enterprise workloads, or other choices in orchestration configuration.
 
 \chapter{Results} \label{ch:results}
@@ -462,7 +416,7 @@ Figure~\ref{fig:chart1_accuracy} shows the macro-average score of each individua
 \label{fig:chart1_accuracy}
 \end{figure}
 
-Based on macro-average ranking, the models are separated into two groups. The first group consists of reasoning models, namely gpt-5.4-pro (93.2\%), gpt-5.4 (90.8\%), and o3-mini (83.3\%), and all of them surpass the 80\% threshold. On the other hand, the second group includes gpt-4.1 (68.3\%), gpt-5.4-mini (60.6\%), and gpt-4.1-mini (57.6\%), which sit between 57\% and 69\%. o3-mini sets the lower bound of the top tier at 83.3\%, and gpt-4.1 defines the upper bound of the second tier at 68.3\%. The gap between them is roughly 15 percent, exceeding any gap within either tier.
+Based on macro-average ranking, the models are separated into two groups. The first group consists of reasoning models, namely gpt-5.4-pro (93.2\%), gpt-5.4 (90.8\%), and o3-mini (83.3\%), and all of them surpass the 80\% threshold. On the other hand, the second group includes gpt-4.1 (68.3\%), gpt-5.4-mini (60.6\%), and gpt-4.1-mini (57.6\%), which sit between 57\% and 69\%. o3-mini sets the lower bound of the top tier at 83.3\%, and gpt-4.1 defines the upper bound of the second tier at 68.3\%. The gap between them is roughly 15 pp, exceeding any gap within either tier.
 
 \begin{figure}[H]
 \centering
@@ -477,31 +431,31 @@ Between the models, gpt-4.1 is a noteworthy outlier. It achieved 92.4\% average 
 
 \subsection{Latency Results and Observed API Effects} \label{subsec:standalone_latency}
 
-Wall-clock latency was measured per request as defined in Section~\ref{subsec:latency_token}. Table~\ref{tab:standalone_latency} summarises both mean and median per-request latency along with the number of requests that exceeded 120 seconds and the maximum value observed during the standalone runs.
+Wall-clock latency was measured per request as defined in Section~\ref{subsec:latency_token}. Table~\ref{tab:standalone_latency} summarises both macro-average and median per-request latency along with the number of requests that exceeded 120 seconds and the maximum value observed during the standalone runs.
 
 \begin{table}[H]
 \centering
-\caption{Per-request latency statistics for the standalone models.}
+\caption{Per-request latency statistics for the standalone models. The macro-mean column averages the per-dataset mean latency across the five benchmarks (this is the latency that enters the macro-average reward in Table~\ref{tab:standalone_reward}); the median, outlier count and maximum are computed over all individual requests.}
 \label{tab:standalone_latency}
 \begin{tabular}{ccccc}
 \toprule
-Model & Mean (s) & Median (s) & \# outliers $>$120s & Max (s) \\
+Model & Macro mean (s) & Median (s) & \# outliers $>$120s & Max (s) \\
 \midrule
-gpt-4.1-mini & 17.4 & 9.6 & 35 & 634.7 \\
-gpt-5.4-mini & 18.4 & 8.2 & 23 & 630.9 \\
-gpt-4.1 & 28.1 & 6.0 & 54 & 648.9 \\
+gpt-4.1-mini & 15.8 & 9.6 & 35 & 634.7 \\
+gpt-5.4-mini & 17.4 & 8.2 & 23 & 630.9 \\
+gpt-4.1 & 20.9 & 6.0 & 54 & 648.9 \\
 gpt-5.4 & 34.7 & 6.1 & 10 & 607.5 \\
 gpt-5.4-pro & 53.1 & 17.8 & 32 & 888.8 \\
-o3-mini & 65.7 & 15.4 & 107 & 760.0 \\
+o3-mini & 61.6 & 15.4 & 107 & 760.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Conventional pattern could be observed for the mean ranking. On average, the small model is faster than its larger counterpart (gpt-4.1-mini 17.4s vs.\ gpt-4.1 28.1s; gpt-5.4-mini 18.4s vs.\ gpt-5.4 34.7s). The reverse is true for the medians, where gpt-4.1 (6.0s) and gpt-5.4 (6.1s) are below their respective minis (9.6s and 8.2s). The low median with a higher mean indicates that the bulk of large-model requests complete quickly, but a small number of long-running outliers shift the average upward. The same effect drives the means of the minis themselves. Requests above 120s are roughly similar across all deployments (10 to 54 for the four general-purpose models, 32 for gpt-5.4-pro, and 107 for o3-mini). This matches with the description written in Section~\ref{sec:cloud_constraints}. As the quota tier is reached, deployment latency degrades, and this is usually the case for reasoning-enabled models because they perform additional internal processing.
+Conventional pattern could be observed for the mean ranking. On average, the small model is faster than its larger counterpart (gpt-4.1-mini 15.8s vs.\ gpt-4.1 20.9s; gpt-5.4-mini 17.4s vs.\ gpt-5.4 34.7s). The reverse is true for the medians, where gpt-4.1 (6.0s) and gpt-5.4 (6.1s) are below their respective minis (9.6s and 8.2s). The low median with a higher mean indicates that the bulk of large-model requests complete quickly, but a small number of long-running outliers shift the average upward. The same effect drives the means of the minis themselves. Requests above 120s are roughly similar across all deployments (10 to 54 for the four general-purpose models, 32 for gpt-5.4-pro, and 107 for o3-mini). This matches with the description written in Section~\ref{sec:cloud_constraints}. As the quota tier is reached, deployment latency degrades, and this is usually the case for reasoning-enabled models because they perform additional internal processing.
 
 A smaller, genuine effect is also present. The mini models emit substantially more completion tokens than their larger siblings on the multiple-choice and short-answer benchmarks. On MMLU-Pro, gpt-4.1 produces an average of 9 completion tokens per request, while gpt-4.1-mini produces 150. This variation in the number of tokens leads to a minor increase in latency even in unthrottled requests. Therefore, instead of pure model speeds, the reported mean latencies should be understood as deployment-level observations.
 
-The two reasoning-enabled models exhibit the longest tails. Average of o3-mini was 65.7s, mostly due to MMLU-Pro (104.1s per request) and the same was 53.1s for gpt-5.4-pro, mostly due to GPQA (104.9s per request). Both behaviors are consistent with the architectural property discussed in Section~\ref{sec:reasoning_inference}, which states that for complex tasks, inference generation takes longer due to internal deliberation, while the generation time remains reasonable for simpler ones, such as GSM8K (18.7s for o3-mini, 14.1s for gpt-5.4-pro).
+The two reasoning-enabled models exhibit the longest tails. Macro-average of o3-mini was 61.6s, mostly due to MMLU-Pro (104.1s per request) and the same was 53.1s for gpt-5.4-pro, mostly due to GPQA (104.9s per request). Both behaviors are consistent with the architectural property discussed in Section~\ref{sec:reasoning_inference}, which states that for complex tasks, inference generation takes longer due to internal deliberation, while the generation time remains reasonable for simpler ones, such as GSM8K (18.7s for o3-mini, 14.1s for gpt-5.4-pro).
 
 \subsection{Token Usage and Cost Results} \label{subsec:standalone_cost}
 
@@ -558,7 +512,7 @@ o3-mini & $-$0.787 & 0.787 \\
 \end{tabular}
 \end{table}
 
-Figure~\ref{fig:chart4_reward} visualizes the same ranking. At default weights gpt-5.4 attains the highest reward ($-$0.444), followed by gpt-4.1 ($-$0.527), gpt-5.4-mini ($-$0.569) and gpt-4.1-mini ($-$0.582). gpt-5.4-pro, despite being the most accurate model on the macro average, drops to fifth place at $-$0.705. Its accuracy advantage of 2.4 pp over gpt-5.4 is overwhelmed by the additional cost ($\sim$100 m\$ per request) and latency ($\sim$20s per request). o3-mini trails at $-$0.787 because its performance is mostly impacted by a mean latency of 65.7 seconds.
+Figure~\ref{fig:chart4_reward} visualizes the same ranking. At default weights gpt-5.4 attains the highest reward ($-$0.444), followed by gpt-4.1 ($-$0.527), gpt-5.4-mini ($-$0.569) and gpt-4.1-mini ($-$0.582). gpt-5.4-pro, despite being the most accurate model on the macro average, drops to fifth place at $-$0.705. Its accuracy advantage of 2.4 pp over gpt-5.4 is overwhelmed by the additional cost ($\sim$100 m\$ per request) and latency ($\sim$20s per request). o3-mini trails at $-$0.787 because its performance is mostly impacted by a macro-mean latency of 61.6 seconds.
 
 \begin{figure}[H]
 \centering
@@ -583,7 +537,7 @@ The default ranking is, however, only one slice of the parameter space. The two 
 \label{fig:chart6_reward_vs_lambda_latency}
 \end{figure}
 
-The following two-dimensional decision map (Figure~\ref{fig:chart7_best_model_heatmap}) presents the best optional model, based on the $\lambda_{e}$ and $\lambda_{l}$. Each color represents a different LLM model. Each grid cell ($\lambda_{e}$, $\lambda_{l}$) is colored with the color of the standalone model that achieves the highest macro-average reward at that weighting. There are four continuous regions visible. First, in the top-left corner, where the penalty weight for latency is heavy, gpt-4.1-mini triumphs by virtue of its mean time of 17.4s. Second, in the broad central region, gpt-5.4 wins. These two sections are separated by a thin diagonal band of gpt-4.1. And lastly, gpt-5.4-pro emerges only in the high-$\lambda_{e}$, low-$\lambda_{l}$ strip along the bottom right, where accuracy is paramount, and latency is cheap. gpt-5.4-mini and o3-mini do not win any cell on the macro grid. The per-dataset version (Figure~\ref{fig:chart8_best_model_heatmap_per_dataset}) performs the same operation for each benchmark and illustrates that the best model choice is also task-dependent.
+The following two-dimensional decision map (Figure~\ref{fig:chart7_best_model_heatmap}) presents the best optional model, based on the $\lambda_{e}$ and $\lambda_{l}$. Each color represents a different LLM model. Each grid cell ($\lambda_{e}$, $\lambda_{l}$) is colored with the color of the standalone model that achieves the highest macro-average reward at that weighting. There are four continuous regions visible. First, in the top-left corner, where the penalty weight for latency is heavy, gpt-4.1-mini triumphs by virtue of its macro-mean time of 15.8s. Second, in the broad central region, gpt-5.4 wins. These two sections are separated by a thin diagonal band of gpt-4.1. And lastly, gpt-5.4-pro emerges only in the high-$\lambda_{e}$, low-$\lambda_{l}$ strip along the bottom right, where accuracy is paramount, and latency is cheap. gpt-5.4-mini and o3-mini do not win any cell on the macro grid. The per-dataset version (Figure~\ref{fig:chart8_best_model_heatmap_per_dataset}) performs the same operation for each benchmark and illustrates that the best model choice is also task-dependent.
 
 \begin{figure}[H]
 \centering
@@ -656,7 +610,7 @@ The reason for such a low escalation rate is that the modern small models are ex
 
 \subsection{Latency and Cost Trade-Offs} \label{subsec:cascade_tradeoffs}
 
-Because escalation is rare, the latency of every cascade configuration is dominated by the latency of its small model. The macro-average latency of the gpt-4.1-mini-based cascades stays around 17.7--18.3s and that of the gpt-5.4-mini-based cascades around 28.5--31.3s. They are slightly higher than the standalone metrics shown in Section~\ref{subsec:standalone_latency} (17.4s and 18.4s, respectively) due to a small number of escalated requests that took longer to execute. The large-model component contributes only the additional time required to handle the few escalated requests.
+Because escalation is rare, the latency of every cascade configuration is dominated by the latency of its small model. The macro-average latency of the gpt-4.1-mini-based cascades stays around 17.7--18.3s and that of the gpt-5.4-mini-based cascades around 28.5--31.3s. They are slightly higher than the standalone metrics shown in Section~\ref{subsec:standalone_latency} (15.8s and 17.4s, respectively) due to a small number of escalated requests that took longer to execute. The large-model component contributes only the additional time required to handle the few escalated requests.
 
 The cost picture is qualitatively similar but not identical. Table~\ref{tab:cascade_cost} compares the macro-average cost per request between $T=60$ and $T=90$ for each pairing.
 
@@ -707,7 +661,7 @@ gpt-5.4-mini $\rightarrow$ gpt-5.4 & $-$0.680 & $-$0.680 & $-$0.681 & $-$0.569 &
 \end{tabular}
 \end{table}
 
-The reward differences across the three thresholds within any pairing are at most 0.03 reward units. The best cascade configuration, gpt-4.1-mini $\rightarrow$ gpt-5.4 at $T=75$, yielding $-$0.601, performed better than both gpt-5.4-mini-based cascades (around $-$0.680) and the standalone gpt-4.1-mini baseline reported in Section~\ref{subsec:standalone_reward} ($-$0.582). However, it did not demonstrate well enough to reach the standalone gpt-5.4-mini baseline ($-$0.569) or the standalone leader gpt-5.4 ($-$0.444). The gpt-4.1-mini-based cascades score better than the gpt-5.4-mini-based ones (around $-$0.601 vs.\ around $-$0.680); this ordering is the inverse of the small-model accuracy ranking and is driven by the higher latency carried by the gpt-5.4-mini-based cascade runs, which contribute about 0.29 latency penalty units per request at $\lambda_{l} = 0.01$ versus about 0.18 for gpt-4.1-mini-based runs.
+The reward differences across the three thresholds within any pairing are at most 0.03 reward units. The best cascade configuration, gpt-4.1-mini $\rightarrow$ gpt-5.4 at $T=75$, yielding $-$0.601, performed better than both gpt-5.4-mini-based cascades (around $-$0.680) but did not reach any of the standalone baselines reported in Section~\ref{subsec:standalone_reward}, falling short of gpt-4.1-mini ($-$0.582), gpt-5.4-mini ($-$0.569) and the standalone leader gpt-5.4 ($-$0.444). The gpt-4.1-mini-based cascades score better than the gpt-5.4-mini-based ones (around $-$0.601 vs.\ around $-$0.680); this ordering is the inverse of the small-model accuracy ranking and is driven by the higher latency carried by the gpt-5.4-mini-based cascade runs, which contribute about 0.29 latency penalty units per request at $\lambda_{l} = 0.01$ versus about 0.18 for gpt-4.1-mini-based runs.
 
 The next two figures (Figure~\ref{fig:chartC4_cascade_reward_vs_lambda_error} and Figure~\ref{fig:chartC5_cascade_reward_vs_lambda_latency}) show the sensitivity of the cascade reward to the penalty weights, by sweeping $\lambda_{e}$ and $\lambda_{l}$ in a 2$\times$2 layout and overlaying the corresponding small-only and large-only baselines for reference.
 
@@ -726,7 +680,7 @@ The next two figures (Figure~\ref{fig:chartC4_cascade_reward_vs_lambda_error} an
 \end{figure}
 
 
-Although the macro-average decision map shows that no cascade configuration ever beats a standalone model overall, the per-dataset decision maps in Figure~\ref{fig:chartC6_cascade_per_dataset_decision_map} reveal isolated exceptions. The gpt-4.1-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a broad upper-left region on MMLU-Pro, and the gpt-5.4-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a smaller upper-left section on GSM8K. The rest of the dataset results are still covered entirely by standalone models.
+Although the macro-average decision map shows that no cascade configuration ever beats a standalone model overall, the per-dataset decision maps in Figure~\ref{fig:chartC6_cascade_per_dataset_decision_map} show exceptions for some specific datasets. The gpt-4.1-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a broad upper-left region on MMLU-Pro, and the gpt-5.4-mini $\rightarrow$ gpt-4.1 $T=60$ cascade wins a smaller upper-left section on GSM8K. The rest of the dataset results are still covered entirely by standalone models.
 
 \begin{figure}[H]
 \centering
@@ -793,7 +747,7 @@ The routing pattern in the previous table explains the asymmetry between the two
 
 \subsection{Latency and Cost Trade-Offs} \label{subsec:router_tradeoffs}
 
-Because the large model handles only between 11\% and 26\% of the inputs, the macro-average latency of every router configuration is close to its small-model baseline plus a small per-request routing overhead. The configurations using gpt-4.1-mini as the small model record 19.5s and 22.9s, against 17.4s for gpt-4.1-mini standalone; the configurations using gpt-5.4-mini as the small model record 28.8s and 34.0s, against 18.4s for gpt-5.4-mini standalone. The gpt-5.4-mini-based router runs sit noticeably above the standalone baseline because every request pays an additional routing call, and the inputs that are escalated to the large model (concentrated on the harder benchmarks such as GPQA, MMLU-Pro and GSM8K) take longer there than they would on the small model alone. The input set is identical to the standalone evaluation; the latency gap reflects the routing overhead and the cost of escalation, not a different distribution of questions. The router therefore cannot push the wall-clock latency below the latency floor of the small model.
+Because the large model handles only between 11\% and 26\% of the inputs, the macro-average latency of every router configuration is close to its small-model baseline plus a small per-request routing overhead. The configurations using gpt-4.1-mini as the small model record 19.5s and 22.9s, against 15.8s for gpt-4.1-mini standalone; the configurations using gpt-5.4-mini as the small model record 28.8s and 34.0s, against 17.4s for gpt-5.4-mini standalone. The gpt-5.4-mini-based router runs sit noticeably above the standalone baseline because every request pays an additional routing call, and the inputs that are escalated to the large model (concentrated on the harder benchmarks such as GPQA, MMLU-Pro and GSM8K) take longer there than they would on the small model alone. The input set is identical to the standalone evaluation; the latency gap reflects the routing overhead and the cost of escalation, not a different distribution of questions. The router therefore cannot push the wall-clock latency below the latency floor of the small model.
 
 Cost behaves the opposite way. Every router configuration is markedly cheaper than its large-model standalone baseline. Table~\ref{tab:router_cost} reports the macro-average per-request cost.
 
@@ -844,7 +798,7 @@ rtr=5.4-mini, 5.4-mini $\rightarrow$ 5.4 & $-$0.571 & $-$0.569 & $-$0.444 \\
 \end{tabular}
 \end{table}
 
-The best router at default weights across all four router settings is rtr=gpt-5.4-mini, gpt-4.1-mini $\rightarrow$ gpt-4.1 with a reward of $-$0.498. This score exceeds both the small models mentioned in Section~\ref{subsec:standalone_reward} (gpt-4.1-mini $=-$0.582, gpt-5.4-mini $=-$0.569) and the gpt-4.1 standalone baseline ($-$0.527). There is only 0.054 reward units gap between it and the standalone leader gpt-5.4 ($-$0.444). Combined together, the router's accuracy advantage over gpt-4.1 ($+$4.8 pp), its lower cost per request (0.344 m\$ vs.\ 0.687 m\$) and its lower latency (22.9s vs.\ 28.1s) all push the reward above the gpt-4.1 baseline at the default settings.
+The best router at default weights across all four router settings is rtr=gpt-5.4-mini, gpt-4.1-mini $\rightarrow$ gpt-4.1 with a reward of $-$0.498. This score exceeds both the small models mentioned in Section~\ref{subsec:standalone_reward} (gpt-4.1-mini $=-$0.582, gpt-5.4-mini $=-$0.569) and the gpt-4.1 standalone baseline ($-$0.527). There is only 0.054 reward units gap between it and the standalone leader gpt-5.4 ($-$0.444). Combined together, the router's accuracy advantage over gpt-4.1 ($+$4.8 pp) and its lower cost per request (0.344 m\$ vs.\ 0.687 m\$) push the reward above the gpt-4.1 baseline at the default settings, despite a marginally higher macro-mean latency (22.9s vs.\ 20.9s).
 
 A second comparison was the gpt-5.4-mini, 5.4-mini $\rightarrow$ 5.4 configuration, which has the highest accuracy (77.0\%) but a worse reward ($-$0.571) than its 4.1-based sibling ($-$0.498). The dominant reason is latency, not cost. The 5.4-based router records 34.0s of macro latency against 22.9s for the 4.1-based router, which translates into a $+$0.111 reward-unit penalty at $\lambda_{l} = 0.01$. The reverse trend holds for costs. Although a single GPQA request to gpt-5.4 is roughly 14.8 m\$, in contrast to the 0.77 m\$ fee for gpt-4.1, it is worth noting that merely 25\% of such inputs result in an escalation. Additionally, the small-model floor for the 5.4-based router (gpt-5.4-mini, 0.138 m\$) is less expensive than gpt-4.1-mini (0.255 m\$). The macro per-request cost of the 5.4-based router (0.231 m\$) is therefore actually lower than that of the 4.1-based router (0.344 m\$), contributing only $-$0.0001 reward units. The $+$3.9 pp accuracy gain returns about $+$0.039 reward units at $\lambda_{e} = 1.0$, which is not enough to compensate for the latency loss. Cost has the largest absolute ratio difference between the two large models ($\sim$7.8$\times$), but because cost enters the reward in dollars (not milli-dollars) and is diluted by the small escalation fraction, its contribution in reward units is roughly three orders of magnitude below the latency contribution at default weights.
 
@@ -1002,7 +956,7 @@ gpt-5.4-mini $N=3$ & $-$0.565 & $-$0.569 & $+$0.004 \\
 
 Both configurations improve the reward of their underlying single-call baseline. The accuracy term represents the only positive reward, giving $+$0.068 reward ($+$6.8 pp) for gpt-4.1-mini and $+$0.026 reward ($+$2.6 pp) for gpt-5.4-mini at $\lambda_{e} = 1.0$. Two factors offset this gain. First one is the cost term, as self-consistency is exactly three times more expensive per request (Section~\ref{subsec:sc_costlat}), and the second one is the latency term, because the self-consistency latency is 1.07 times the standalone baseline, resulting in an additional approximately 1.2 seconds per request and incurring a cost of about 0.012 reward units at $\lambda_{l} = 0.01$ for both configurations. The net increase is 0.039 reward units for gpt-4.1-mini and only 0.004 reward units for gpt-5.4-mini, both of which are less than the contribution from accuracy alone. Indeed, this is consistent with the cost and latency penalties eating into the accuracy gain on both configurations.
 
-The two figures below show the sensitivity of the self-consistency reward to the penalty weights. The error sweep (Figure~\ref{fig:chartSC4_selfcons_reward_vs_lambda_error}) includes the corresponding single-call baselines as reference lines. The latency sweep is omitted by design (cf.\ the chart description in Chapter~\ref{ch:methodology}): since the $N = 3$ calls are in parallel, the latency of the configuration is bound by a single slowest sample and therefore the resulting curve, as a function of $\lambda_{l}$, is very nearly identical to the curve of a single call.
+The two figures below show the sensitivity of the self-consistency reward to the penalty weights. The error sweep (Figure~\ref{fig:chartSC4_selfcons_reward_vs_lambda_error}) includes the corresponding single-call baselines as reference lines. The latency sweep is omitted by design: since the $N = 3$ calls are in parallel, the latency of the configuration is bound by a single slowest sample and therefore the resulting curve, as a function of $\lambda_{l}$, is very nearly identical to the curve of a single call.
 
 \begin{figure}[H]
 \centering
@@ -1070,7 +1024,7 @@ This chapter interprets the results of Chapter~\ref{ch:results} and answers the 
 
 The findings demonstrate that the quality and cost relationship among the six models is not continuous but instead forms two distinct tiers. Macro accuracy of all reasoning-enabled top-tier models (gpt-5.4-pro 93.2\%, gpt-5.4 90.8\%, o3-mini 83.3\%) is over 80\%. In contrast, for gpt-4.1, gpt-5.4-mini, and gpt-4.1-mini, macro accuracy ranges from 57\% to 68\%. The 15 pp gap between the lowest top-tier model (o3-mini, 83.3\%) and the highest bottom-tier model (gpt-4.1, 68.3\%) is larger than any within-tier variation. This supports the claim that the difference between these two tiers reflects a fundamental difference in model designs instead of being a gradual improvement.
 
-The spread along the cost axis is substantially greater than that along the quality axis. While there are only 36 pp differences in macro-accuracy, the cost per request differs by approximately 770 times (gpt-5.4-mini at 0.138 m\$ versus gpt-5.4-pro at 106.0 m\$). As a result, no model Pareto-dominates. gpt-5.4 has a near-frontier accuracy (90.8\%) with a moderate cost (5.37 m\$) and the lowest median latency (6.1 s), making it closest to the best global option. All these characteristics make it win the economic-reward ranking at the default weights ($-$0.444) despite not being the most accurate model. gpt-5.4-pro adds only $+$2.4 pp accuracy over gpt-5.4 at $\sim$20$\times$ the cost and $\sim$1.5$\times$ the mean latency, illustrating sharply diminishing returns at the frontier and dropping to fifth place in the reward ordering ($-$0.705).
+The spread along the cost axis is substantially greater than that along the quality axis. While there are only 36 pp differences in macro-accuracy, the cost per request differs by approximately 770 times (gpt-5.4-mini at 0.138 m\$ versus gpt-5.4-pro at 106.0 m\$). As a result, no model Pareto-dominates. gpt-5.4 has a near-frontier accuracy (90.8\%) with a moderate cost (5.37 m\$) and the second-lowest median latency (6.1 s, only 0.1 s above gpt-4.1's 6.0 s), making it closest to the best global option. All these characteristics make it win the economic-reward ranking at the default weights ($-$0.444) despite not being the most accurate model. gpt-5.4-pro adds only $+$2.4 pp accuracy over gpt-5.4 at $\sim$20$\times$ the cost and $\sim$1.5$\times$ the mean latency, illustrating sharply diminishing returns at the frontier and dropping to fifth place in the reward ordering ($-$0.705).
 
 Mean latency is conventional, with mini models performing faster than their base counterparts (gpt-4.1-mini at 17.4 s versus gpt-4.1 at 28.1 s). However, the median latency shows the opposite, where gpt-4.1 (6.0 s) and gpt-5.4 (6.1 s) are faster than their respective mini models (9.6 s and 8.2 s). These higher means and lower medians show that most bulk requests finish quickly, while a few long-running calls increase the mean. This finding reflects the real-world operation characteristics more than the model quality. In the Azure environment, quota tier and throttling play a more significant role in the latency compared to model quality. This is especially true for reasoning-capable models, which will inherently have a longer tail due to the deliberation process in the reasoning step. Reward-based decisions in production should therefore rely on percentile latencies rather than means.
 
@@ -1082,7 +1036,7 @@ Reasoning-enabled inference can assist only a small subset of tasks, and only un
 
 o3-mini beats all 4.1 models on procedural tasks (94.1\% HumanEval, 94.0\% GSM8K) but is less effective than gpt-5.4 and gpt-5.4-pro on knowledge-heavy GPQA (52.8\% vs.\ 82--84\%). This means that spending more time deliberating helps only when the limiting factor is the process (chains of arithmetic, programming code) and not stored knowledge (advanced-level science). This is consistent with the recent observation that reasoning under output-length pressure does not monotonically improve quality \citep{an_emprical_study_of_llm_reasoning_ability_under_strict_output_length}.
 
-Reasoning also imposes the heaviest latency tail in the study. Even though the average latency of o3-mini is 65.7 s, it reaches 104.1 s on MMLU-Pro, and similarly, the average latency of gpt-5.4-pro is 53.1 s, while reaching 104.9 s on GPQA. Because of such a small number of slow requests, although ranked in 3rd place in the accuracy results, the economic reward of o3-mini becomes the worst of all six models ($-$0.787). gpt-5.4-pro, the most accurate model, drops from first in accuracy to fifth in reward ($-$0.705) for the same reason. Each additional accuracy point at the frontier is disproportionately more expensive and time-consuming, and an approximately 100 m\$ and 20 s performance gap relative to gpt-5.4 is not offset by a 2.4 percentage point (pp) accuracy gain achieved under default weights.
+Reasoning also imposes the heaviest latency tail in the study. Even though the macro-mean latency of o3-mini is 61.6 s, it reaches 104.1 s on MMLU-Pro, and similarly, the macro-mean latency of gpt-5.4-pro is 53.1 s, while reaching 104.9 s on GPQA. Because of such a small number of slow requests, although ranked in 3rd place in the accuracy results, the economic reward of o3-mini becomes the worst of all six models ($-$0.787). gpt-5.4-pro, the most accurate model, drops from first in accuracy to fifth in reward ($-$0.705) for the same reason. Each additional accuracy point at the frontier is disproportionately more expensive and time-consuming, and an approximately 100 m\$ and 20 s performance gap relative to gpt-5.4 is not offset by a 2.4 percentage point (pp) accuracy gain achieved under default weights.
 
 Therefore, reasoning models justify their additional cost and latency only when the task benefits from chain-of-thought and error weights far more heavily than latency or cost (corresponding to the high-$\lambda_{e}$ region in the heatmaps, where gpt-5.4-pro wins cells). This is why they are not an optimal choice for latency-sensitive Azure workloads. In such cases, lighter models such as gpt-5.4 are top-ranked in the macro reward and the decision map.
 
@@ -1118,7 +1072,7 @@ There are a number of practical implications of these results. First of all, whe
 
 This thesis approaches model selection from a different perspective. To fold accuracy, latency, and cost into a single scalar, a composite, reward-based economic model has been introduced, and the trade-offs between them are illustrated by computing the reward under different $\lambda_{e}$ and $\lambda_{l}$ parameters. Through applying this model, six Azure-hosted models across the 4.1 and 5.4 generations, the mini/full/pro tiers, and the standard and reasoning versions were compared on five benchmarks under identical conditions.
 
-Further, cascade, router, and self-consistency techniques are evaluated within the same framework. Results reveal that the learned routing method achieves the best optimization-layer reward at the default weights and outperforms every standalone in a diagonal band of the ($\lambda_{e}$, $\lambda_{l}$) plane, while parallel self-consistency dominates the high-latency-penalty region; the confidence-based cascading approach, by contrast, is neutralized by LLM overconfidence. Finally, the thesis addresses several cloud-specific constraints, namely throttling, quota-driven latency outliers, and the divergence between mean and median latency, which are decisive in real deployments but usually absent from academic evaluations.
+Further, cascade, router, and self-consistency techniques are evaluated within the same framework. The results indicate that the learned routing method achieves the highest optimization-layer reward at default weights and outperforms all standalone methods within a diagonal band of the ($\lambda_{e}$, $\lambda_{l}$) plane. In contrast, parallel self-consistency performs best in regions with high latency penalties. In contrast, the confidence-based cascading approach could not achieve any optimization because it is neutralized by LLM overconfidence. Finally, the thesis addressed several cloud constraints, including throttling, quota-driven latency, and the difference between mean and median latency, which are decisive in the real deployment yet absent from most academic evaluations.
 
 \chapter{Conclusion, Limitations, and Future Work} \label{ch:conclusion}
 
@@ -1126,7 +1080,7 @@ Further, cascade, router, and self-consistency techniques are evaluated within t
 
 Through covering six Azure-hosted models, five datasets, and three optimization strategies, the empirical study of the thesis confirms that for enterprise deployments, LLM selection cannot be reduced to a single accuracy metric. Standalone evaluation shows that accuracy and cost do not align with a smooth frontier. Rather, they are divided into two distinct tiers, such that a 36 pp increase in macro accuracy corresponds to a three-order-of-magnitude difference in cost. After applying the economic reward function defined in Chapter~\ref{ch:methodology} with latency and cost values and calculating the reward, the model with the highest accuracy does not become the most favorable choice anymore and instead, gpt-5.4 emerges as the most balanced choice for general tasks.
 
-The optimization techniques behave very differently from one another. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. Even though self-consistency does not reach the next stronger standalone model, it offers a modest, predictable accuracy lift for cheap workers when $N$ samples can be dispatched in parallel. Both the routing strategy and parallel self-consistency beat every standalone model in substantial but disjoint regions of the ($\lambda_{e}$, $\lambda_{l}$) plane (router along a diagonal band, self-consistency in the high-latency-penalty area), and for routing the router's quality dominates that of its workers. These results suggest that the benefit of an optimization layer in production depends much more on calibration and routing quality than on the intrinsic appeal of the strategy. Lastly, reasoning-enabled inference is best suited for accuracy-critical, latency-tolerant tasks rather than as a default approach.
+The optimization techniques behave very differently from one another. Confidence-gated cascading is largely neutralized by the overconfidence of current Azure-hosted models and never wins a cell of the macro decision map. While self-consistency does not match the performance of the next stronger standalone model, it provides a modest accuracy improvement for low-cost workers when $N$ samples are processed in parallel. Both the routing strategy and parallel self-consistency beat every standalone model in substantial but disjoint regions of the ($\lambda_{e}$, $\lambda_{l}$) plane (router along a diagonal band, self-consistency in the high-latency-penalty area), and for routing the router's quality dominates that of its workers. These results suggest that the benefit of an optimization layer in production depends much more on calibration and routing quality than on the intrinsic appeal of the strategy. Lastly, reasoning-enabled inference is best suited for accuracy-critical, latency-tolerant tasks rather than as a default approach.
 
 \section{Limitations} \label{sec:conclusion_limitations}
 
@@ -1152,7 +1106,6 @@ A third direction is to analyze routing further. Since router quality has a grea
 
 The final focus area is to further extend the decision framework to include tail-latency penalties and budget restrictions, and to compare performance with competing aggregation rules. Introducing live throttling signals and usage quota information into the current framework will seamlessly transition it into an online decision system for cloud-deployment-time decisions.
 
-\nocite{*}
 \renewcommand{\bibname}{References}
 \bibliographystyle{agsm}
 \bibliography{ref}
